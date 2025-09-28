@@ -434,7 +434,7 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {soundPacks.map((pack) => (
-                <Card key={pack.id} className="bg-slate-800 border-slate-700 hover:bg-slate-750 transition-colors" data-testid={`soundpack-card-${pack.id}`}>
+                <Card key={pack.id} className="bg-black border-blue-800 hover:bg-slate-900 transition-colors" data-testid={`soundpack-card-${pack.id}`}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
