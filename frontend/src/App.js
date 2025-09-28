@@ -481,6 +481,13 @@ const ContractSection = ({ user, onUserUpdate }) => {
       
       // Refresh contracts to get updated status
       await fetchContracts();
+      
+      // Update user state to reflect contract signed status
+      if (onUserUpdate) {
+        const updatedUser = { ...user, contract_signed: true };
+        onUserUpdate(updatedUser);
+      }
+      
       toast.success('Contract signed successfully!');
     } catch (error) {
       toast.error('Failed to sign contract');
