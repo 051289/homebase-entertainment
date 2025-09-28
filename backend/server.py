@@ -154,6 +154,83 @@ class CollaborationResponse(BaseModel):
     invite_id: str
     action: str  # accept, reject
 
+# Advanced Studio Features Models
+class DAWPlugin(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    category: str  # compressor, reverb, equalizer, synthesizer, etc.
+    daw_compatibility: List[str]  # pro_tools, fl_studio, both
+    author: str
+    version: str
+    is_premium: bool = False
+    description: Optional[str] = None
+    parameters: List[dict] = []  # Plugin parameters and default values
+    presets: List[dict] = []  # Plugin presets
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AudioInterface(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = "Presonus Audiobox 96"
+    input_channels: int = 2
+    output_channels: int = 2
+    sample_rate: int = 44100  # 44100, 48000, 96000
+    buffer_size: int = 256  # 64, 128, 256, 512, 1024
+    phantom_power: bool = False
+    direct_monitoring: bool = True
+    input_gain: List[float] = [0.5, 0.5]  # Gain for each input channel (0.0 to 1.0)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class StudioSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    # Sound-proof studio settings
+    room_size: str = "medium"  # small, medium, large
+    acoustic_treatment: str = "moderate"  # minimal, moderate, professional
+    noise_reduction: float = 0.7  # 0.0 to 1.0
+    reverb_simulation: str = "studio"  # studio, hall, church, chamber
+    # Surround sound settings
+    surround_enabled: bool = False
+    surround_format: str = "stereo"  # stereo, 5.1, 7.1
+    speaker_positions: List[dict] = []  # 3D positions of virtual speakers
+    # Audio interface settings
+    audio_interface: AudioInterface = Field(default_factory=AudioInterface)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ProjectDAWExport(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    daw_format: str  # pro_tools, fl_studio
+    export_settings: dict
+    file_path: Optional[str] = None
+    status: str = "pending"  # pending, completed, failed
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Request/Response Models
+class DAWPluginCreate(BaseModel):
+    name: str
+    category: str
+    daw_compatibility: List[str]
+    author: str
+    version: str
+    is_premium: bool = False
+    description: Optional[str] = None
+
+class StudioSettingsUpdate(BaseModel):
+    room_size: Optional[str] = None
+    acoustic_treatment: Optional[str] = None
+    noise_reduction: Optional[float] = None
+    reverb_simulation: Optional[str] = None
+    surround_enabled: Optional[bool] = None
+    surround_format: Optional[str] = None
+
+class AudioInterfaceSettings(BaseModel):
+    sample_rate: Optional[int] = None
+    buffer_size: Optional[int] = None
+    phantom_power: Optional[bool] = None
+    direct_monitoring: Optional[bool] = None
+    input_gain: Optional[List[float]] = None
+
 # Authentication endpoints
 @api_router.post("/auth/register", response_model=User)
 async def register_user(user_data: UserCreate):
