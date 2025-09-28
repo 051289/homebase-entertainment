@@ -13,7 +13,7 @@ class RecordingStudioAPITester:
         self.test_project = None
         self.test_contract = None
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, files=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, files=None, use_json=True):
         """Run a single API test"""
         url = f"{self.api_url}/{endpoint}"
         headers = {}
@@ -28,13 +28,13 @@ class RecordingStudioAPITester:
             elif method == 'POST':
                 if files:
                     response = requests.post(url, data=data, files=files, headers=headers)
-                elif data and isinstance(data, dict) and any(isinstance(v, str) for v in data.values()):
-                    # Form data
-                    response = requests.post(url, data=data, headers=headers)
-                else:
+                elif use_json:
                     # JSON data
                     headers['Content-Type'] = 'application/json'
                     response = requests.post(url, json=data, headers=headers)
+                else:
+                    # Form data
+                    response = requests.post(url, data=data, headers=headers)
 
             success = response.status_code == expected_status
             if success:
