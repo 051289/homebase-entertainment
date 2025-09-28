@@ -583,12 +583,12 @@ async def invite_collaborator(
         raise HTTPException(status_code=404, detail="Inviting user not found")
     
     # Get the invited user by username
-    to_user = await db.users.find_one({"username": invite.to_username})
+    to_user = await db.users.find_one({"username": to_username})
     if not to_user:
         raise HTTPException(status_code=404, detail="User to invite not found")
     
     # Check if project exists and belongs to the inviting user
-    project = await db.projects.find_one({"id": invite.project_id, "user_id": from_user_id})
+    project = await db.projects.find_one({"id": project_id, "user_id": from_user_id})
     if not project:
         raise HTTPException(status_code=404, detail="Project not found or access denied")
     
