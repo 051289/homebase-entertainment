@@ -12,6 +12,8 @@ class RecordingStudioAPITester:
         self.test_user = None
         self.test_project = None
         self.test_contract = None
+        self.test_collaborator = None
+        self.test_invite = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, files=None, use_json=True):
         """Run a single API test"""
