@@ -639,6 +639,49 @@ async def get_premium_sound_packs(user_id: str):
     packs = await db.sound_packs.find({"is_premium": True}).to_list(1000)
     return [SoundPack(**pack) for pack in packs]
 
+@api_router.post("/admin/init-premium-packs")
+async def initialize_premium_sound_packs():
+    """Initialize premium sound packs for demo purposes"""
+    premium_packs = [
+        SoundPack(
+            name="BandLab Exclusive Trap Beats",
+            description="Premium trap beats exclusively for BandLab members",
+            genre="Trap",
+            author="BandLab Studios",
+            tags=["trap", "exclusive", "professional", "bandlab"],
+            is_premium=True
+        ),
+        SoundPack(
+            name="Pro Studio Vocals",
+            description="Professional vocal samples recorded in premium studios",
+            genre="Pop",
+            author="T.H.U.G N HOMEBASE ENT.",
+            tags=["vocals", "professional", "studio", "premium"],
+            is_premium=True
+        ),
+        SoundPack(
+            name="Orchestral Elements Premium",
+            description="High-quality orchestral samples for premium members",
+            genre="Classical",
+            author="Symphony Studios",
+            tags=["orchestral", "strings", "premium", "cinematic"],
+            is_premium=True
+        ),
+        SoundPack(
+            name="Future Bass Collection",
+            description="Modern future bass sounds and synths",
+            genre="Electronic",
+            author="Electronic Dreams",
+            tags=["future bass", "synths", "modern", "premium"],
+            is_premium=True
+        )
+    ]
+    
+    for pack in premium_packs:
+        await db.sound_packs.insert_one(pack.dict())
+    
+    return {"message": f"Initialized {len(premium_packs)} premium sound packs"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
