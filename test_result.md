@@ -147,7 +147,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "BandLab membership system backend"
     - "BandLab membership UI integration"
   stuck_tasks: []
   test_all: false
