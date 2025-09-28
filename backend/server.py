@@ -134,8 +134,20 @@ async def get_user(user_id: str):
 
 # Project endpoints
 @api_router.post("/projects", response_model=Project)
-async def create_project(project_data: ProjectCreate, user_id: str = Form(...)):
-    project = Project(**project_data.dict(), user_id=user_id)
+async def create_project(
+    title: str = Form(...),
+    description: Optional[str] = Form(None),
+    user_id: str = Form(...),
+    bpm: Optional[int] = Form(120),
+    key_signature: Optional[str] = Form("C")
+):
+    project = Project(
+        title=title,
+        description=description,
+        user_id=user_id,
+        bpm=bpm,
+        key_signature=key_signature
+    )
     await db.projects.insert_one(project.dict())
     return project
 
