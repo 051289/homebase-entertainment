@@ -41,10 +41,19 @@ class User(BaseModel):
     email: str
     full_name: str
     is_artist: bool = False
-    membership_tier: str = "free"  # free, pro, premium
+    membership_tier: str = "free"  # free, bandlab_basic, bandlab_pro, bandlab_premium
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     contract_signed: bool = False
     profile_image: Optional[str] = None
+    # BandLab membership features
+    bandlab_connected: bool = False
+    bandlab_username: Optional[str] = None
+    collaboration_enabled: bool = False
+    premium_sound_packs: bool = False
+    cloud_storage_gb: int = 1  # 1GB free, more with upgrades
+    max_collaborators: int = 2  # 2 free, more with upgrades
+    monthly_downloads: int = 0  # Track monthly downloads
+    last_download_reset: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
     username: str
