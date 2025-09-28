@@ -306,10 +306,42 @@ async def get_sound_packs(genre: Optional[str] = None):
     return [SoundPack(**pack) for pack in packs]
 
 @api_router.get("/soundpacks/{filename}")
-async def get_sound_pack_audio(filename: str):
+async def get_sound_pack_audio(filename: str, user_id: Optional[str] = None):
     file_path = sound_packs_dir / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Sound pack file not found")
+    
+    # If user_id provided, track download and check limits
+    if user_id:
+        user = await db.users.find_one({"id": user_id})
+        if user:
+            # Check if month has passed, reset download count
+            last_reset = datetime.fromisoformat(user.get("last_download_reset", datetime.now(timezone.utc).isoformat()))
+            if (datetime.now(timezone.utc) - last_reset).days >= 30:
+                await db.users.update_one(
+                    {"id": user_id},
+                    {
+                        "$set": {
+                            "monthly_downloads": 0,
+                            "last_download_reset": datetime.now(timezone.utc)
+                        }
+                    }
+                )
+                user["monthly_downloads"] = 0
+            
+            # Check download limit
+            monthly_limit = user.get("monthly_download_limit", 5)
+            current_downloads = user.get("monthly_downloads", 0)
+            
+            if current_downloads >= monthly_limit:
+                raise HTTPException(status_code=429, detail="Monthly download limit reached. Upgrade membership for more downloads.")
+            
+            # Increment download count
+            await db.users.update_one(
+                {"id": user_id},
+                {"$inc": {"monthly_downloads": 1}}
+            )
+    
     return FileResponse(file_path)
 
 # Contract endpoints
