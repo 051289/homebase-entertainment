@@ -434,7 +434,7 @@ const StudioDashboard = ({ user }) => {
 };
 
 // Contract Section Component
-const ContractSection = ({ user }) => {
+const ContractSection = ({ user, onUserUpdate }) => {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateContract, setShowCreateContract] = useState(false);
