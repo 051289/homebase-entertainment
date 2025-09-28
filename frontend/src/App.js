@@ -512,6 +512,16 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
             </div>
           </TabsContent>
 
+          {/* DAW Plugins Tab */}
+          <TabsContent value="daw" className="space-y-6">
+            <DAWPluginsSection user={user} />
+          </TabsContent>
+
+          {/* Studio Settings Tab */}
+          <TabsContent value="studio-settings" className="space-y-6">
+            <StudioSettingsSection user={user} />
+          </TabsContent>
+
           {/* BandLab Membership Tab */}
           <TabsContent value="membership" className="space-y-6">
             <MembershipSection user={user} onUserUpdate={onUserUpdate} />
