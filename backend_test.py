@@ -1147,12 +1147,12 @@ class RecordingStudioAPITester:
 
 def main():
     print("🎵 T.H.U.G N HOMEBASE ENT. Recording Studio API Test Suite")
-    print("🎯 BandLab Membership Integration Testing")
+    print("🎯 Advanced Studio Features Testing")
     print("=" * 60)
     
     tester = RecordingStudioAPITester()
     
-    # Test sequence - Core functionality first, then BandLab features
+    # Test sequence - Core functionality first, then BandLab features, then Advanced Studio Features
     tests = [
         # Core API Tests
         ("User Registration", tester.test_user_registration),
@@ -1186,9 +1186,35 @@ def main():
         
         # Access Control Tests
         ("Test Premium Access Restriction", tester.test_free_user_premium_access_restriction),
+        
+        # Advanced Studio Features Tests - DAW Plugins & Integration
+        ("Initialize DAW Plugins", tester.test_initialize_daw_plugins),
+        ("Get All DAW Plugins", tester.test_get_daw_plugins_all),
+        ("Get DAW Plugins Filtered by DAW", tester.test_get_daw_plugins_filtered_by_daw),
+        ("Get DAW Plugins Filtered by Category", tester.test_get_daw_plugins_filtered_by_category),
+        ("Get DAW Plugins Premium Filter", tester.test_get_daw_plugins_premium_filter),
+        ("Create DAW Plugin", tester.test_create_daw_plugin),
+        ("Get DAW Plugin by ID", tester.test_get_daw_plugin_by_id),
+        ("Project DAW Export", tester.test_project_daw_export),
+        ("DAW Plugin Access Restrictions", tester.test_daw_plugin_access_restrictions),
+        
+        # Studio Settings Management
+        ("Get Studio Settings", tester.test_get_studio_settings),
+        ("Update Studio Settings", tester.test_update_studio_settings),
+        
+        # Presonus Audiobox 96 Interface
+        ("Update Audio Interface Settings", tester.test_update_audio_interface_settings),
+        
+        # Creative Sound Blaster Surround Sound
+        ("Configure Stereo Surround Sound", tester.test_configure_surround_sound_stereo),
+        ("Configure 5.1 Surround Sound", tester.test_configure_surround_sound_5_1),
+        ("Configure 7.1 Surround Sound", tester.test_configure_surround_sound_7_1),
+        
+        # Error Cases and Edge Cases
+        ("Studio Settings Error Cases", tester.test_studio_settings_error_cases),
     ]
     
-    print(f"\nRunning {len(tests)} API tests...\n")
+    print(f"\nRunning {len(tests)} comprehensive API tests...\n")
     
     for test_name, test_func in tests:
         try:
@@ -1201,7 +1227,7 @@ def main():
     print(f"📊 Test Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All BandLab membership integration tests passed!")
+        print("🎉 All advanced studio features tests passed!")
         return 0
     else:
         print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed")
