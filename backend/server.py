@@ -268,7 +268,11 @@ async def get_sound_pack_audio(filename: str):
 
 # Contract endpoints
 @api_router.post("/contracts", response_model=Contract)
-async def create_contract(contract_data: ContractCreate, user_id: str = Form(...)):
+async def create_contract(
+    artist_name: str = Form(...),
+    user_id: str = Form(...),
+    contract_type: str = Form("artist_agreement")
+):
     # Default T.H.U.G N HOMEBASE ENT. artist agreement terms
     default_terms = """
 T.H.U.G N HOMEBASE ENT. ARTIST AGREEMENT
@@ -294,8 +298,9 @@ By signing below, both parties agree to the terms and conditions outlined above.
 """
     
     contract = Contract(
-        **contract_data.dict(),
+        artist_name=artist_name,
         user_id=user_id,
+        contract_type=contract_type,
         terms=default_terms
     )
     await db.contracts.insert_one(contract.dict())
