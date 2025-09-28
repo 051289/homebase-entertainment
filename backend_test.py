@@ -225,6 +225,7 @@ class RecordingStudioAPITester:
             print("❌ Skipping - No test user available")
             return False
             
+        # Send as FormData like the frontend does
         contract_data = {
             "artist_name": self.test_user['full_name'],
             "contract_type": "artist_agreement",
