@@ -232,7 +232,7 @@ const AuthModal = ({ isOpen, onClose, onUserCreated }) => {
 };
 
 // Studio Dashboard Component
-const StudioDashboard = ({ user }) => {
+const StudioDashboard = ({ user, onUserUpdate }) => {
   const [projects, setProjects] = useState([]);
   const [soundPacks, setSoundPacks] = useState([]);
   const [activeTab, setActiveTab] = useState('studio');
