@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Implement BandLab membership integration as the next priority feature for the recording studio app. The app currently has user authentication, project management, sound packs, and contracts working. Need to add BandLab-style membership tiers, enhanced sound library access, and collaboration features."
+user_problem_statement: "Implement all remaining advanced features for the recording studio app: 1) Pro Tools and FL Studio plug-ins integration, 2) Sound-proof recording studio features, 3) Presonus Audiobox 96 interface integration, 4) Creative Sound Blaster surround sound. BandLab membership integration is now complete and working perfectly."
 
 backend:
   - task: "BandLab membership system backend"
