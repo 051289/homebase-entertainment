@@ -572,7 +572,11 @@ async def connect_bandlab_account(user_id: str = Form(...), bandlab_username: st
 
 # Collaboration Endpoints
 @api_router.post("/collaboration/invite", response_model=CollaborationInvite)
-async def invite_collaborator(invite: CollaborationInviteCreate, from_user_id: str = Form(...)):
+async def invite_collaborator(
+    project_id: str = Form(...),
+    to_username: str = Form(...),
+    from_user_id: str = Form(...)
+):
     # Get the inviting user
     from_user = await db.users.find_one({"id": from_user_id})
     if not from_user:
