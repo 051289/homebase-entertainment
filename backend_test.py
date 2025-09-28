@@ -237,7 +237,8 @@ class RecordingStudioAPITester:
             "POST",
             "contracts",
             200,
-            data=contract_data
+            data=contract_data,
+            use_json=False
         )
         
         if success and 'id' in response:
