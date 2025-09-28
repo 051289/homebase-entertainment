@@ -470,6 +470,23 @@ const ContractSection = ({ user }) => {
     }
   };
 
+  const signContract = async (contractId) => {
+    try {
+      // Create a simple signature data (in a real app, this would be from a signature pad)
+      const signatureData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+      
+      await axios.post(`${API}/contracts/${contractId}/sign`, {
+        signature_data: signatureData
+      });
+      
+      // Refresh contracts to get updated status
+      await fetchContracts();
+      toast.success('Contract signed successfully!');
+    } catch (error) {
+      toast.error('Failed to sign contract');
+    }
+  };
+
   if (loading) return <div className="text-center">Loading contracts...</div>;
 
   return (
