@@ -445,6 +445,449 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
   );
 };
 
+// BandLab Membership Section Component
+const MembershipSection = ({ user, onUserUpdate }) => {
+  const [membershipPlans, setMembershipPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
+  const [bandlabConnecting, setBandlabConnecting] = useState(false);
+  const [bandlabUsername, setBandlabUsername] = useState('');
+
+  useEffect(() => {
+    fetchMembershipPlans();
+  }, []);
+
+  const fetchMembershipPlans = async () => {
+    try {
+      const response = await axios.get(`${API}/membership/plans`);
+      setMembershipPlans(response.data);
+    } catch (error) {
+      toast.error('Failed to load membership plans');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const upgradeMembership = async (tier) => {
+    setUpgrading(true);
+    try {
+      const response = await axios.post(`${API}/membership/upgrade`, {
+        user_id: user.id,
+        new_tier: tier
+      });
+      toast.success(response.data.message);
+      if (onUserUpdate) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error) {
+      toast.error('Failed to upgrade membership');
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  const connectBandLab = async () => {
+    if (!bandlabUsername.trim()) {
+      toast.error('Please enter your BandLab username');
+      return;
+    }
+    
+    setBandlabConnecting(true);
+    try {
+      const formData = new FormData();
+      formData.append('user_id', user.id);
+      formData.append('bandlab_username', bandlabUsername);
+      
+      await axios.post(`${API}/membership/connect-bandlab`, formData);
+      toast.success('BandLab account connected successfully!');
+      
+      // Update user state
+      if (onUserUpdate) {
+        const updatedUser = { 
+          ...user, 
+          bandlab_connected: true, 
+          bandlab_username: bandlabUsername,
+          collaboration_enabled: true
+        };
+        onUserUpdate(updatedUser);
+      }
+    } catch (error) {
+      toast.error('Failed to connect BandLab account');
+    } finally {
+      setBandlabConnecting(false);
+    }
+  };
+
+  const getMembershipBadgeColor = (tier) => {
+    switch (tier) {
+      case 'free': return 'bg-gray-500';
+      case 'bandlab_basic': return 'bg-blue-500';
+      case 'bandlab_pro': return 'bg-purple-500';
+      case 'bandlab_premium': return 'bg-gradient-to-r from-yellow-400 to-orange-400';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  if (loading) return <div className="text-center">Loading membership plans...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">BandLab Membership</h2>
+        <div className="flex items-center gap-4">
+          {user.bandlab_connected ? (
+            <Badge className="bg-green-500" data-testid="bandlab-connected-badge">
+              Connected: @{user.bandlab_username}
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-orange-400 border-orange-400">
+              Not Connected
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* BandLab Connection */}
+      {!user.bandlab_connected && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              🎵 Connect Your BandLab Account
+            </CardTitle>
+            <CardDescription className="text-gray-300">
+              Connect your BandLab account to unlock collaboration features and sync your projects
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <Label htmlFor="bandlab-username" className="text-white">BandLab Username</Label>
+                <Input
+                  id="bandlab-username"
+                  value={bandlabUsername}
+                  onChange={(e) => setBandlabUsername(e.target.value)}
+                  placeholder="Enter your BandLab username"
+                  className="bg-slate-700 border-slate-600 text-white"
+                  data-testid="bandlab-username-input"
+                />
+              </div>
+              <Button 
+                onClick={connectBandLab}
+                disabled={bandlabConnecting}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                data-testid="connect-bandlab-btn"
+              >
+                {bandlabConnecting ? 'Connecting...' : 'Connect BandLab'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Current Membership Status */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">Current Membership</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge className={getMembershipBadgeColor(user.membership_tier)} data-testid="current-membership-badge">
+                  {membershipPlans.find(p => p.tier === user.membership_tier)?.name || user.membership_tier.toUpperCase()}
+                </Badge>
+              </div>
+              <div className="text-sm text-gray-400 mt-2">
+                Cloud Storage: {user.cloud_storage_gb || 1}GB • 
+                Max Collaborators: {user.max_collaborators || 2} • 
+                Monthly Downloads: {user.monthly_downloads || 0}/{user.monthly_download_limit || 5}
+              </div>
+            </div>
+          </div>
+          
+          {/* Feature list for current plan */}
+          <div className="space-y-2">
+            {membershipPlans.find(p => p.tier === user.membership_tier)?.features.map((feature, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm text-gray-300">
+                <span className="text-green-400">✓</span>
+                {feature}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Membership Plans */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {membershipPlans.map((plan) => (
+          <Card 
+            key={plan.id} 
+            className={`bg-slate-800 border-slate-700 hover:bg-slate-750 transition-colors ${
+              user.membership_tier === plan.tier ? 'ring-2 ring-purple-500' : ''
+            }`}
+            data-testid={`membership-plan-${plan.tier}`}
+          >
+            <CardHeader>
+              <div className="text-center">
+                <Badge className={getMembershipBadgeColor(plan.tier)} data-testid={`plan-badge-${plan.tier}`}>
+                  {plan.name}
+                </Badge>
+                <div className="mt-4">
+                  <div className="text-3xl font-bold text-white">
+                    ${plan.price_monthly}
+                    <span className="text-lg text-gray-400">/mo</span>
+                  </div>
+                  {plan.price_yearly > 0 && (
+                    <div className="text-sm text-gray-400">
+                      ${plan.price_yearly}/year (save 17%)
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 mb-4">
+                {plan.features.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-green-400">✓</span>
+                    {feature}
+                  </div>
+                ))}
+              </div>
+              
+              <Button 
+                onClick={() => upgradeMembership(plan.tier)}
+                disabled={upgrading || user.membership_tier === plan.tier}
+                className={`w-full ${
+                  user.membership_tier === plan.tier 
+                    ? 'bg-gray-600 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                }`}
+                data-testid={`upgrade-to-${plan.tier}`}
+              >
+                {user.membership_tier === plan.tier 
+                  ? 'Current Plan' 
+                  : upgrading 
+                    ? 'Upgrading...' 
+                    : plan.price_monthly === 0 
+                      ? 'Downgrade' 
+                      : 'Upgrade'
+                }
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Collaboration Section Component
+const CollaborationSection = ({ user }) => {
+  const [collaborationInvites, setCollaborationInvites] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [inviteUsername, setInviteUsername] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [inviting, setInviting] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      const [invitesRes, projectsRes] = await Promise.all([
+        axios.get(`${API}/collaboration/invites/${user.id}`),
+        axios.get(`${API}/projects?user_id=${user.id}`)
+      ]);
+      setCollaborationInvites(invitesRes.data);
+      setProjects(projectsRes.data);
+    } catch (error) {
+      toast.error('Failed to load collaboration data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendInvite = async () => {
+    if (!inviteUsername.trim() || !selectedProjectId) {
+      toast.error('Please select a project and enter a username');
+      return;
+    }
+
+    setInviting(true);
+    try {
+      const formData = new FormData();
+      formData.append('project_id', selectedProjectId);
+      formData.append('to_username', inviteUsername);
+      formData.append('from_user_id', user.id);
+
+      await axios.post(`${API}/collaboration/invite`, formData);
+      toast.success('Collaboration invite sent!');
+      setInviteUsername('');
+      setSelectedProjectId('');
+      await fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send invite');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const respondToInvite = async (inviteId, action) => {
+    try {
+      await axios.post(`${API}/collaboration/respond`, {
+        invite_id: inviteId,
+        action: action
+      });
+      toast.success(`Invitation ${action}ed successfully!`);
+      await fetchData();
+    } catch (error) {
+      toast.error('Failed to respond to invitation');
+    }
+  };
+
+  if (loading) return <div className="text-center">Loading collaboration data...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Collaboration</h2>
+        <div className="flex items-center gap-2">
+          {user.collaboration_enabled ? (
+            <Badge className="bg-green-500" data-testid="collaboration-enabled-badge">
+              Collaboration Enabled
+            </Badge>
+          ) : (
+            <Badge variant="destructive">
+              Collaboration Disabled
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {!user.collaboration_enabled && (
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">🚀 Enable Collaboration</CardTitle>
+            <CardDescription className="text-gray-300">
+              Connect your BandLab account or upgrade your membership to collaborate with other artists
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-400">
+              To enable collaboration features, please connect your BandLab account in the membership section or upgrade to a paid plan.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {user.collaboration_enabled && (
+        <>
+          {/* Send Invite */}
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Invite Collaborators</CardTitle>
+              <CardDescription className="text-gray-300">
+                Invite other artists to collaborate on your projects
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="project-select" className="text-white">Select Project</Label>
+                  <select
+                    id="project-select"
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="project-select"
+                  >
+                    <option value="">Choose a project...</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="invite-username" className="text-white">Username to Invite</Label>
+                  <Input
+                    id="invite-username"
+                    value={inviteUsername}
+                    onChange={(e) => setInviteUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="bg-slate-700 border-slate-600 text-white"
+                    data-testid="invite-username-input"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={sendInvite}
+                    disabled={inviting}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    data-testid="send-invite-btn"
+                  >
+                    {inviting ? 'Sending...' : 'Send Invite'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pending Invites */}
+          {collaborationInvites.length > 0 && (
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Pending Invitations</CardTitle>
+                <CardDescription className="text-gray-300">
+                  You have {collaborationInvites.length} pending collaboration invitations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {collaborationInvites.map((invite) => (
+                    <div key={invite.id} className="flex justify-between items-center p-4 bg-slate-700 rounded-lg" data-testid={`invite-${invite.id}`}>
+                      <div>
+                        <div className="text-white font-medium">
+                          Collaboration invite from @{invite.from_username}
+                        </div>
+                        <div className="text-gray-400 text-sm">
+                          Project ID: {invite.project_id}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm"
+                          onClick={() => respondToInvite(invite.id, 'accept')}
+                          className="bg-green-600 hover:bg-green-700"
+                          data-testid={`accept-invite-${invite.id}`}
+                        >
+                          Accept
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => respondToInvite(invite.id, 'reject')}
+                          data-testid={`reject-invite-${invite.id}`}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 // Contract Section Component
 const ContractSection = ({ user, onUserUpdate }) => {
   const [contracts, setContracts] = useState([]);
