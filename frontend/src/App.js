@@ -420,6 +420,16 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
             </div>
           </TabsContent>
 
+          {/* BandLab Membership Tab */}
+          <TabsContent value="membership" className="space-y-6">
+            <MembershipSection user={user} onUserUpdate={onUserUpdate} />
+          </TabsContent>
+
+          {/* Collaboration Tab */}
+          <TabsContent value="collaboration" className="space-y-6">
+            <CollaborationSection user={user} />
+          </TabsContent>
+
           {/* Contracts Tab */}
           <TabsContent value="contracts" className="space-y-6">
             <ContractSection user={user} onUserUpdate={onUserUpdate} />
