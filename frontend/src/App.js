@@ -709,7 +709,7 @@ const DAWPluginsSection = ({ user }) => {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full mt-4 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white"
+                    className="w-full mt-4 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
                     data-testid={`load-plugin-${plugin.id}`}
                   >
                     Load Plugin
