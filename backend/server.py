@@ -202,8 +202,25 @@ async def get_audio(filename: str):
 
 # Sound pack endpoints
 @api_router.post("/soundpacks", response_model=SoundPack)
-async def create_sound_pack(pack_data: SoundPackCreate, author: str = Form(...)):
-    sound_pack = SoundPack(**pack_data.dict(), author=author)
+async def create_sound_pack(
+    name: str = Form(...),
+    author: str = Form(...),
+    description: Optional[str] = Form(None),
+    genre: str = Form(...),
+    tags: str = Form(""),  # Comma-separated tags
+    is_premium: bool = Form(False)
+):
+    # Parse tags from comma-separated string
+    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()] if tags else []
+    
+    sound_pack = SoundPack(
+        name=name,
+        description=description,
+        genre=genre,
+        author=author,
+        tags=tag_list,
+        is_premium=is_premium
+    )
     await db.sound_packs.insert_one(sound_pack.dict())
     return sound_pack
 
