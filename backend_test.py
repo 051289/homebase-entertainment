@@ -122,12 +122,11 @@ class RecordingStudioAPITester:
             print("❌ Skipping - No test user available")
             return False
             
+        # Send as FormData like the frontend does
         project_data = {
             "title": "Test Recording Project",
             "description": "A test project for the recording studio",
-            "user_id": self.test_user['id'],
-            "bpm": 120,
-            "key_signature": "C"
+            "user_id": self.test_user['id']
         }
         
         success, response = self.run_test(
