@@ -244,9 +244,12 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
 
   const fetchData = async () => {
     try {
-      // Initialize premium packs if needed
+      // Initialize premium packs and DAW plugins if needed
       try {
-        await axios.post(`${API}/admin/init-premium-packs`);
+        await Promise.all([
+          axios.post(`${API}/admin/init-premium-packs`),
+          axios.post(`${API}/admin/init-daw-plugins`)
+        ]);
       } catch (error) {
         // Ignore if already initialized
       }
