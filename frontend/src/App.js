@@ -306,6 +306,8 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
           <TabsList className="bg-slate-800 border border-slate-700">
             <TabsTrigger value="studio" className="data-[state=active]:bg-purple-600" data-testid="studio-tab">Recording Studio</TabsTrigger>
             <TabsTrigger value="packs" className="data-[state=active]:bg-purple-600" data-testid="soundpacks-tab">Sound Packs</TabsTrigger>
+            <TabsTrigger value="membership" className="data-[state=active]:bg-purple-600" data-testid="membership-tab">BandLab Membership</TabsTrigger>
+            <TabsTrigger value="collaboration" className="data-[state=active]:bg-purple-600" data-testid="collaboration-tab">Collaboration</TabsTrigger>
             <TabsTrigger value="contracts" className="data-[state=active]:bg-purple-600" data-testid="contracts-tab">Contracts</TabsTrigger>
             <TabsTrigger value="profile" className="data-[state=active]:bg-purple-600" data-testid="profile-tab">Profile</TabsTrigger>
           </TabsList>
