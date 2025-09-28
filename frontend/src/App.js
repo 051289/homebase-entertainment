@@ -366,7 +366,24 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
 
           {/* Sound Packs Tab */}
           <TabsContent value="packs" className="space-y-6">
-            <h2 className="text-2xl font-bold">Available Sound Packs</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Available Sound Packs</h2>
+              <div className="text-sm text-gray-400">
+                Downloads: {user.monthly_downloads || 0}/{user.monthly_download_limit || 5} this month
+              </div>
+            </div>
+            
+            {/* Download limit warning */}
+            {(user.monthly_downloads || 0) >= (user.monthly_download_limit || 5) && (
+              <Card className="bg-slate-800 border-yellow-500">
+                <CardHeader>
+                  <CardTitle className="text-yellow-400">Download Limit Reached</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    You've reached your monthly download limit. Upgrade your membership for more downloads.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {soundPacks.map((pack) => (
@@ -377,11 +394,18 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
                         <CardTitle className="text-white">{pack.name}</CardTitle>
                         <CardDescription className="text-gray-300">{pack.description}</CardDescription>
                       </div>
-                      {pack.is_premium && (
-                        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400" data-testid={`premium-badge-${pack.id}`}>
-                          PREMIUM
-                        </Badge>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {pack.is_premium && (
+                          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400" data-testid={`premium-badge-${pack.id}`}>
+                            PREMIUM
+                          </Badge>
+                        )}
+                        {!pack.is_premium && (
+                          <Badge variant="outline" className="text-green-400 border-green-400">
+                            FREE
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -398,14 +422,39 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
                           </Badge>
                         ))}
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-4 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
-                        data-testid={`download-pack-${pack.id}`}
-                      >
-                        Download Pack
-                      </Button>
+                      
+                      {/* Download restrictions */}
+                      {pack.is_premium && !user.premium_sound_packs ? (
+                        <Button 
+                          disabled
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full mt-4 opacity-50 cursor-not-allowed"
+                          data-testid={`download-pack-${pack.id}`}
+                        >
+                          Premium Required
+                        </Button>
+                      ) : (user.monthly_downloads || 0) >= (user.monthly_download_limit || 5) ? (
+                        <Button 
+                          disabled
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full mt-4 opacity-50 cursor-not-allowed"
+                          data-testid={`download-pack-${pack.id}`}
+                        >
+                          Download Limit Reached
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full mt-4 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+                          onClick={() => downloadSoundPack(pack)}
+                          data-testid={`download-pack-${pack.id}`}
+                        >
+                          Download Pack
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
