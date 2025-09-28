@@ -629,12 +629,14 @@ class RecordingStudioAPITester:
 
 def main():
     print("🎵 T.H.U.G N HOMEBASE ENT. Recording Studio API Test Suite")
+    print("🎯 BandLab Membership Integration Testing")
     print("=" * 60)
     
     tester = RecordingStudioAPITester()
     
-    # Test sequence
+    # Test sequence - Core functionality first, then BandLab features
     tests = [
+        # Core API Tests
         ("User Registration", tester.test_user_registration),
         ("Get All Users", tester.test_get_users),
         ("Get User by ID", tester.test_get_user_by_id),
@@ -646,6 +648,26 @@ def main():
         ("Create Contract", tester.test_create_contract),
         ("Get Contracts", tester.test_get_contracts),
         ("Sign Contract", tester.test_sign_contract),
+        
+        # BandLab Membership Integration Tests
+        ("Get Membership Plans", tester.test_get_membership_plans),
+        ("Upgrade Membership", tester.test_upgrade_membership),
+        ("Connect BandLab Account", tester.test_connect_bandlab_account),
+        ("Verify Membership Features", tester.test_membership_features_verification),
+        
+        # Collaboration System Tests
+        ("Create Collaboration Invite", tester.test_create_collaboration_invite),
+        ("Get Collaboration Invites", tester.test_get_collaboration_invites),
+        ("Respond to Collaboration", tester.test_respond_to_collaboration),
+        
+        # Enhanced Sound Packs Tests
+        ("Initialize Premium Sound Packs", tester.test_initialize_premium_packs),
+        ("Get Premium Sound Packs", tester.test_get_premium_sound_packs),
+        ("Get Sound Packs with Membership Filter", tester.test_get_sound_packs_with_membership_filter),
+        ("Test Download Tracking", tester.test_download_tracking_and_limits),
+        
+        # Access Control Tests
+        ("Test Premium Access Restriction", tester.test_free_user_premium_access_restriction),
     ]
     
     print(f"\nRunning {len(tests)} API tests...\n")
@@ -661,7 +683,7 @@ def main():
     print(f"📊 Test Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All backend API tests passed!")
+        print("🎉 All BandLab membership integration tests passed!")
         return 0
     else:
         print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed")
