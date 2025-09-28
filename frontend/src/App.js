@@ -43,8 +43,8 @@ const LandingPage = ({ onGetStarted }) => {
         
         <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
           <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Mega Recording
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"> Studio</span>
+            T.H.U.G N HOMEBASE ENT.
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent"> Recording Studio</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-2xl mx-auto leading-relaxed">
             Professional recording studio with sound packs, collaboration tools, and exclusive artist contracts for T.H.U.G N HOMEBASE ENT.
