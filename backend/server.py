@@ -313,6 +313,20 @@ async def get_sound_packs(genre: Optional[str] = None, user_id: Optional[str] = 
     packs = await db.sound_packs.find(filter_query).to_list(1000)
     return [SoundPack(**pack) for pack in packs]
 
+# Premium sound packs endpoint - must come before {filename} route
+@api_router.get("/soundpacks/premium", response_model=List[SoundPack])
+async def get_premium_sound_packs(user_id: str):
+    """Get premium sound packs (requires membership)"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.get("premium_sound_packs", False):
+        raise HTTPException(status_code=403, detail="Premium membership required for premium sound packs")
+    
+    packs = await db.sound_packs.find({"is_premium": True}).to_list(1000)
+    return [SoundPack(**pack) for pack in packs]
+
 @api_router.get("/soundpacks/{filename}")
 async def get_sound_pack_audio(filename: str, user_id: Optional[str] = None):
     file_path = sound_packs_dir / filename
