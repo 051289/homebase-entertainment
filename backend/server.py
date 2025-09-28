@@ -1082,6 +1082,289 @@ async def initialize_daw_plugins():
     
     return {"message": f"Initialized {len(plugins)} DAW plugins"}
 
+# AI Music Assistant Endpoints
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+from dotenv import load_dotenv
+load_dotenv()
+
+@api_router.post("/ai/composition/generate")
+async def generate_composition_ideas(request: MusicCompositionRequest, user_id: str = Form(...)):
+    """Generate AI-powered composition ideas and suggestions"""
+    try:
+        # Create AI chat session
+        session_id = f"composition_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        system_message = """You are an expert music composer and producer with deep knowledge of music theory, 
+        composition techniques, and modern production. You help musicians create amazing compositions by providing 
+        creative ideas, chord progressions, melody suggestions, arrangement tips, and production guidance."""
+        
+        chat = LlmChat(
+            api_key=os.environ.get('EMERGENT_LLM_KEY'),
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        # Create user message
+        instruments_str = ", ".join(request.instruments) if request.instruments else "various instruments"
+        user_message = UserMessage(
+            text=f"""I need help composing a {request.genre} song with a {request.mood} mood in {request.key} 
+            at {request.tempo} BPM using {instruments_str}. 
+            
+            Additional context: {request.additional_info or 'None provided'}
+            
+            Please provide:
+            1. A suitable chord progression (with Roman numeral analysis)
+            2. Melody and rhythm suggestions
+            3. Arrangement ideas for the specified instruments
+            4. Production tips specific to this genre and mood
+            5. Song structure recommendations
+            
+            Make it creative and practical for a recording studio environment."""
+        )
+        
+        # Get AI response
+        response = await chat.send_message(user_message)
+        
+        # Save conversation to database
+        conversation = AIConversation(
+            user_id=user_id,
+            session_id=session_id,
+            conversation_type="composition",
+            messages=[
+                {"role": "user", "content": user_message.text, "timestamp": datetime.now(timezone.utc).isoformat()},
+                {"role": "assistant", "content": response, "timestamp": datetime.now(timezone.utc).isoformat()}
+            ]
+        )
+        await db.ai_conversations.insert_one(conversation.dict())
+        
+        return {
+            "composition_ideas": response,
+            "session_id": session_id,
+            "genre": request.genre,
+            "mood": request.mood,
+            "key": request.key,
+            "tempo": request.tempo
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI composition generation failed: {str(e)}")
+
+@api_router.post("/ai/mixing/analyze")
+async def analyze_mixing(request: MixingAnalysisRequest, user_id: str = Form(...)):
+    """Get AI-powered mixing analysis and suggestions"""
+    try:
+        # Get project details
+        project = await db.projects.find_one({"id": request.project_id})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Check access
+        if project["user_id"] != user_id and user_id not in project.get("collaborators", []):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Create AI chat session
+        session_id = f"mixing_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        system_message = """You are a professional mixing engineer with expertise in modern mixing techniques, 
+        EQ, compression, reverb, stereo imaging, and mastering. You provide detailed, actionable mixing advice 
+        for recording studios and help achieve professional-sounding mixes."""
+        
+        chat = LlmChat(
+            api_key=os.environ.get('EMERGENT_LLM_KEY'),
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        focus_areas_str = ", ".join(request.focus_areas) if request.focus_areas else "general mixing"
+        user_message = UserMessage(
+            text=f"""I'm working on a project called "{project['title']}" with {len(project.get('tracks', []))} tracks. 
+            The project is in {project.get('key_signature', 'unknown')} key at {project.get('bpm', 'unknown')} BPM.
+            
+            Focus areas for analysis: {focus_areas_str}
+            
+            Please provide detailed mixing advice covering:
+            1. EQ recommendations for different frequency ranges
+            2. Compression techniques for dynamics control
+            3. Reverb and spatial effects suggestions
+            4. Stereo width and panning recommendations
+            5. Level balancing strategies
+            6. Common mixing mistakes to avoid
+            7. Professional mixing workflow tips
+            
+            Make the advice practical and specific to a modern recording studio setup."""
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        # Save conversation
+        conversation = AIConversation(
+            user_id=user_id,
+            session_id=session_id,
+            conversation_type="mixing",
+            messages=[
+                {"role": "user", "content": user_message.text, "timestamp": datetime.now(timezone.utc).isoformat()},
+                {"role": "assistant", "content": response, "timestamp": datetime.now(timezone.utc).isoformat()}
+            ]
+        )
+        await db.ai_conversations.insert_one(conversation.dict())
+        
+        return {
+            "mixing_analysis": response,
+            "session_id": session_id,
+            "project_title": project["title"],
+            "focus_areas": request.focus_areas
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Mixing analysis failed: {str(e)}")
+
+@api_router.post("/ai/theory/chord-progression")
+async def generate_chord_progression(request: ChordProgressionRequest, user_id: str = Form(...)):
+    """Generate intelligent chord progressions based on music theory"""
+    try:
+        session_id = f"theory_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        system_message = """You are a music theory expert with deep knowledge of harmony, chord progressions, 
+        voice leading, and genre-specific harmonic patterns. You create musically sound and creative chord 
+        progressions that work well in different musical contexts."""
+        
+        chat = LlmChat(
+            api_key=os.environ.get('EMERGENT_LLM_KEY'),
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        user_message = UserMessage(
+            text=f"""Generate a {request.complexity} level chord progression for {request.genre} music 
+            in {request.key} with {request.length} chords.
+            
+            Please provide:
+            1. The chord progression with chord symbols (e.g., Cmaj7, Am7, F, G)
+            2. Roman numeral analysis
+            3. Voice leading suggestions
+            4. Rhythm and strumming patterns appropriate for {request.genre}
+            5. Variations and extensions to make it more interesting
+            6. How this progression fits typical {request.genre} harmonic conventions
+            7. MIDI chord numbers or guitar chord shapes if applicable
+            
+            Make it musically sophisticated yet practical for recording."""
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        # Save conversation
+        conversation = AIConversation(
+            user_id=user_id,
+            session_id=session_id,
+            conversation_type="theory",
+            messages=[
+                {"role": "user", "content": user_message.text, "timestamp": datetime.now(timezone.utc).isoformat()},
+                {"role": "assistant", "content": response, "timestamp": datetime.now(timezone.utc).isoformat()}
+            ]
+        )
+        await db.ai_conversations.insert_one(conversation.dict())
+        
+        return {
+            "chord_progression": response,
+            "session_id": session_id,
+            "key": request.key,
+            "genre": request.genre,
+            "complexity": request.complexity
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chord progression generation failed: {str(e)}")
+
+@api_router.post("/ai/chat")
+async def ai_music_chat(
+    message: str = Form(...),
+    user_id: str = Form(...),
+    session_id: Optional[str] = Form(None),
+    conversation_type: str = Form("general")
+):
+    """General AI music assistant chat"""
+    try:
+        # Use existing session or create new one
+        if not session_id:
+            session_id = f"chat_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Get existing conversation or create new one
+        existing_conversation = await db.ai_conversations.find_one({
+            "user_id": user_id,
+            "session_id": session_id
+        })
+        
+        system_message = """You are an expert AI music assistant specializing in music production, composition, 
+        mixing, mastering, music theory, and recording studio techniques. You help musicians, producers, and 
+        audio engineers with their creative and technical challenges. You provide practical, actionable advice 
+        while being encouraging and creative."""
+        
+        chat = LlmChat(
+            api_key=os.environ.get('EMERGENT_LLM_KEY'),
+            session_id=session_id,
+            system_message=system_message
+        ).with_model("openai", "gpt-4o")
+        
+        user_message = UserMessage(text=message)
+        response = await chat.send_message(user_message)
+        
+        # Update or create conversation
+        new_messages = [
+            {"role": "user", "content": message, "timestamp": datetime.now(timezone.utc).isoformat()},
+            {"role": "assistant", "content": response, "timestamp": datetime.now(timezone.utc).isoformat()}
+        ]
+        
+        if existing_conversation:
+            # Add to existing conversation
+            updated_messages = existing_conversation.get("messages", []) + new_messages
+            await db.ai_conversations.update_one(
+                {"user_id": user_id, "session_id": session_id},
+                {
+                    "$set": {
+                        "messages": updated_messages,
+                        "updated_at": datetime.now(timezone.utc),
+                        "conversation_type": conversation_type
+                    }
+                }
+            )
+        else:
+            # Create new conversation
+            conversation = AIConversation(
+                user_id=user_id,
+                session_id=session_id,
+                conversation_type=conversation_type,
+                messages=new_messages
+            )
+            await db.ai_conversations.insert_one(conversation.dict())
+        
+        return {
+            "response": response,
+            "session_id": session_id,
+            "conversation_type": conversation_type
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI chat failed: {str(e)}")
+
+@api_router.get("/ai/conversations/{user_id}")
+async def get_user_conversations(user_id: str):
+    """Get user's AI conversation history"""
+    conversations = await db.ai_conversations.find(
+        {"user_id": user_id}
+    ).sort("updated_at", -1).to_list(50)
+    
+    return [AIConversation(**conv) for conv in conversations]
+
+@api_router.get("/ai/conversation/{session_id}")
+async def get_conversation(session_id: str, user_id: str):
+    """Get specific conversation by session ID"""
+    conversation = await db.ai_conversations.find_one({
+        "session_id": session_id,
+        "user_id": user_id
+    })
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    return AIConversation(**conversation)
+
 # Include the router in the main app
 app.include_router(api_router)
 
