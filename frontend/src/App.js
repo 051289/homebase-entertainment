@@ -731,6 +731,486 @@ const DAWPluginsSection = ({ user }) => {
   );
 };
 
+// AI Music Assistant Section Component
+const AIMusicAssistantSection = ({ user, projects }) => {
+  const [activeAssistantTab, setActiveAssistantTab] = useState('chat');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  
+  // Composition form state
+  const [compositionForm, setCompositionForm] = useState({
+    genre: 'pop',
+    mood: 'uplifting',
+    key: 'C major',
+    tempo: 120,
+    instruments: [],
+    additional_info: ''
+  });
+  
+  // Mixing form state
+  const [mixingForm, setMixingForm] = useState({
+    project_id: '',
+    focus_areas: []
+  });
+  
+  // Theory form state
+  const [theoryForm, setTheoryForm] = useState({
+    key: 'C major',
+    genre: 'pop',
+    length: 4,
+    complexity: 'intermediate'
+  });
+
+  useEffect(() => {
+    fetchConversations();
+  }, [user]);
+
+  const fetchConversations = async () => {
+    try {
+      const response = await axios.get(`${API}/ai/conversations/${user.id}`);
+      setConversations(response.data);
+    } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!currentMessage.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('message', currentMessage);
+      formData.append('user_id', user.id);
+      formData.append('conversation_type', 'general');
+      if (currentSessionId) {
+        formData.append('session_id', currentSessionId);
+      }
+      
+      const response = await axios.post(`${API}/ai/chat`, formData);
+      
+      const newMessages = [
+        ...chatMessages,
+        { role: 'user', content: currentMessage, timestamp: new Date().toISOString() },
+        { role: 'assistant', content: response.data.response, timestamp: new Date().toISOString() }
+      ];
+      
+      setChatMessages(newMessages);
+      setCurrentSessionId(response.data.session_id);
+      setCurrentMessage('');
+      
+      await fetchConversations();
+    } catch (error) {
+      toast.error('Failed to send message');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateComposition = async () => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      Object.keys(compositionForm).forEach(key => {
+        if (key === 'instruments') {
+          formData.append(key, compositionForm[key].join(','));
+        } else {
+          formData.append(key, compositionForm[key]);
+        }
+      });
+      formData.append('user_id', user.id);
+      
+      const response = await axios.post(`${API}/ai/composition/generate`, formData);
+      
+      const newMessages = [
+        { role: 'user', content: `Generate composition ideas for ${compositionForm.genre} in ${compositionForm.key}`, timestamp: new Date().toISOString() },
+        { role: 'assistant', content: response.data.composition_ideas, timestamp: new Date().toISOString() }
+      ];
+      
+      setChatMessages(newMessages);
+      setCurrentSessionId(response.data.session_id);
+      setActiveAssistantTab('chat');
+      toast.success('Composition ideas generated!');
+    } catch (error) {
+      toast.error('Failed to generate composition');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const analyzeMixing = async () => {
+    if (!mixingForm.project_id) {
+      toast.error('Please select a project');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('project_id', mixingForm.project_id);
+      formData.append('focus_areas', mixingForm.focus_areas.join(','));
+      formData.append('user_id', user.id);
+      
+      const response = await axios.post(`${API}/ai/mixing/analyze`, formData);
+      
+      const newMessages = [
+        { role: 'user', content: `Analyze mixing for project: ${response.data.project_title}`, timestamp: new Date().toISOString() },
+        { role: 'assistant', content: response.data.mixing_analysis, timestamp: new Date().toISOString() }
+      ];
+      
+      setChatMessages(newMessages);
+      setCurrentSessionId(response.data.session_id);
+      setActiveAssistantTab('chat');
+      toast.success('Mixing analysis complete!');
+    } catch (error) {
+      toast.error('Failed to analyze mixing');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateChordProgression = async () => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      Object.keys(theoryForm).forEach(key => {
+        formData.append(key, theoryForm[key]);
+      });
+      formData.append('user_id', user.id);
+      
+      const response = await axios.post(`${API}/ai/theory/chord-progression`, formData);
+      
+      const newMessages = [
+        { role: 'user', content: `Generate ${theoryForm.complexity} chord progression in ${theoryForm.key}`, timestamp: new Date().toISOString() },
+        { role: 'assistant', content: response.data.chord_progression, timestamp: new Date().toISOString() }
+      ];
+      
+      setChatMessages(newMessages);
+      setCurrentSessionId(response.data.session_id);
+      setActiveAssistantTab('chat');
+      toast.success('Chord progression generated!');
+    } catch (error) {
+      toast.error('Failed to generate chord progression');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const genres = ['pop', 'rock', 'jazz', 'hip-hop', 'electronic', 'country', 'r&b', 'classical', 'reggae', 'blues'];
+  const moods = ['uplifting', 'melancholic', 'energetic', 'calm', 'dark', 'bright', 'romantic', 'aggressive', 'mysterious', 'playful'];
+  const keys = ['C major', 'G major', 'D major', 'A major', 'E major', 'B major', 'F# major', 'C# major', 'F major', 'Bb major', 'Eb major', 'Ab major', 'Db major', 'Gb major', 'A minor', 'E minor', 'B minor', 'F# minor', 'C# minor', 'G# minor', 'D# minor', 'A# minor', 'D minor', 'G minor', 'C minor', 'F minor', 'Bb minor', 'Eb minor'];
+  const focusAreas = ['eq', 'compression', 'reverb', 'stereo_width', 'levels', 'saturation', 'dynamics'];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🤖 AI Music Assistant</h2>
+        <Badge className="bg-gradient-to-r from-blue-500 to-purple-500">
+          Powered by GPT-4o
+        </Badge>
+      </div>
+
+      {/* AI Assistant Tabs */}
+      <Tabs value={activeAssistantTab} onValueChange={setActiveAssistantTab} className="space-y-6">
+        <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsTrigger value="chat" className="data-[state=active]:bg-blue-600" data-testid="ai-chat-tab">Chat</TabsTrigger>
+          <TabsTrigger value="composition" className="data-[state=active]:bg-blue-600" data-testid="ai-composition-tab">Composition</TabsTrigger>
+          <TabsTrigger value="mixing" className="data-[state=active]:bg-blue-600" data-testid="ai-mixing-tab">Mixing</TabsTrigger>
+          <TabsTrigger value="theory" className="data-[state=active]:bg-blue-600" data-testid="ai-theory-tab">Music Theory</TabsTrigger>
+        </TabsList>
+
+        {/* Chat Tab */}
+        <TabsContent value="chat" className="space-y-4">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">AI Music Chat</CardTitle>
+              <CardDescription className="text-gray-300">
+                Chat with your AI music assistant about composition, production, mixing, and music theory
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Chat Messages */}
+              <div className="h-96 overflow-y-auto bg-slate-700 rounded p-4 mb-4" data-testid="chat-messages">
+                {chatMessages.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">
+                    <div className="text-4xl mb-4">🎵</div>
+                    <p>Start a conversation with your AI music assistant!</p>
+                    <p className="text-sm mt-2">Ask about composition, mixing, music theory, or anything music-related.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {chatMessages.map((message, index) => (
+                      <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-3xl p-3 rounded-lg ${
+                          message.role === 'user' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-slate-600 text-gray-100'
+                        }`}>
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                          <div className="text-xs opacity-70 mt-1">
+                            {new Date(message.timestamp).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Chat Input */}
+              <div className="flex gap-2">
+                <Input
+                  value={currentMessage}
+                  onChange={(e) => setCurrentMessage(e.target.value)}
+                  placeholder="Ask about composition, mixing, music theory..."
+                  className="bg-slate-700 border-slate-600 text-white flex-1"
+                  onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendChatMessage()}
+                  disabled={isLoading}
+                  data-testid="chat-input"
+                />
+                <Button 
+                  onClick={sendChatMessage}
+                  disabled={isLoading || !currentMessage.trim()}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  data-testid="send-chat-btn"
+                >
+                  {isLoading ? 'Sending...' : 'Send'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Composition Tab */}
+        <TabsContent value="composition" className="space-y-4">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">🎼 AI Composition Assistant</CardTitle>
+              <CardDescription className="text-gray-300">
+                Generate composition ideas, chord progressions, and arrangement suggestions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white">Genre</Label>
+                  <select
+                    value={compositionForm.genre}
+                    onChange={(e) => setCompositionForm({...compositionForm, genre: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="composition-genre"
+                  >
+                    {genres.map(genre => (
+                      <option key={genre} value={genre}>{genre.charAt(0).toUpperCase() + genre.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white">Mood</Label>
+                  <select
+                    value={compositionForm.mood}
+                    onChange={(e) => setCompositionForm({...compositionForm, mood: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="composition-mood"
+                  >
+                    {moods.map(mood => (
+                      <option key={mood} value={mood}>{mood.charAt(0).toUpperCase() + mood.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white">Key</Label>
+                  <select
+                    value={compositionForm.key}
+                    onChange={(e) => setCompositionForm({...compositionForm, key: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="composition-key"
+                  >
+                    {keys.map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white">Tempo (BPM)</Label>
+                  <Input
+                    type="number"
+                    min="60"
+                    max="200"
+                    value={compositionForm.tempo}
+                    onChange={(e) => setCompositionForm({...compositionForm, tempo: parseInt(e.target.value)})}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    data-testid="composition-tempo"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-white">Additional Information</Label>
+                <textarea
+                  value={compositionForm.additional_info}
+                  onChange={(e) => setCompositionForm({...compositionForm, additional_info: e.target.value})}
+                  placeholder="Describe the style, feel, or specific requirements..."
+                  className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded h-20 resize-none"
+                  data-testid="composition-info"
+                />
+              </div>
+              
+              <Button 
+                onClick={generateComposition}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                data-testid="generate-composition-btn"
+              >
+                {isLoading ? 'Generating Ideas...' : '🎼 Generate Composition Ideas'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Mixing Tab */}
+        <TabsContent value="mixing" className="space-y-4">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">🎚️ AI Mixing Assistant</CardTitle>
+              <CardDescription className="text-gray-300">
+                Get professional mixing advice and analysis for your projects
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-white">Select Project</Label>
+                <select
+                  value={mixingForm.project_id}
+                  onChange={(e) => setMixingForm({...mixingForm, project_id: e.target.value})}
+                  className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                  data-testid="mixing-project-select"
+                >
+                  <option value="">Choose a project...</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>{project.title}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <Label className="text-white">Focus Areas (Optional)</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                  {focusAreas.map(area => (
+                    <label key={area} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={mixingForm.focus_areas.includes(area)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setMixingForm({...mixingForm, focus_areas: [...mixingForm.focus_areas, area]});
+                          } else {
+                            setMixingForm({...mixingForm, focus_areas: mixingForm.focus_areas.filter(a => a !== area)});
+                          }
+                        }}
+                        data-testid={`mixing-focus-${area}`}
+                      />
+                      <span className="text-white capitalize">{area.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
+              <Button 
+                onClick={analyzeMixing}
+                disabled={isLoading || !mixingForm.project_id}
+                className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                data-testid="analyze-mixing-btn"
+              >
+                {isLoading ? 'Analyzing...' : '🎚️ Analyze Mixing'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Music Theory Tab */}
+        <TabsContent value="theory" className="space-y-4">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">🎵 Music Theory Assistant</CardTitle>
+              <CardDescription className="text-gray-300">
+                Generate chord progressions and get music theory insights
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white">Key</Label>
+                  <select
+                    value={theoryForm.key}
+                    onChange={(e) => setTheoryForm({...theoryForm, key: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="theory-key"
+                  >
+                    {keys.map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white">Genre</Label>
+                  <select
+                    value={theoryForm.genre}
+                    onChange={(e) => setTheoryForm({...theoryForm, genre: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="theory-genre"
+                  >
+                    {genres.map(genre => (
+                      <option key={genre} value={genre}>{genre.charAt(0).toUpperCase() + genre.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-white">Number of Chords</Label>
+                  <Input
+                    type="number"
+                    min="3"
+                    max="8"
+                    value={theoryForm.length}
+                    onChange={(e) => setTheoryForm({...theoryForm, length: parseInt(e.target.value)})}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    data-testid="theory-length"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Complexity</Label>
+                  <select
+                    value={theoryForm.complexity}
+                    onChange={(e) => setTheoryForm({...theoryForm, complexity: e.target.value})}
+                    className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                    data-testid="theory-complexity"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={generateChordProgression}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                data-testid="generate-chords-btn"
+              >
+                {isLoading ? 'Generating...' : '🎵 Generate Chord Progression'}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
 // Studio Settings Section Component  
 const StudioSettingsSection = ({ user }) => {
   const [studioSettings, setStudioSettings] = useState(null);
