@@ -551,6 +551,7 @@ const ContractSection = ({ user }) => {
                 {contract.status === 'pending' && (
                   <div className="flex gap-4">
                     <Button 
+                      onClick={() => signContract(contract.id)}
                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                       data-testid={`sign-contract-${contract.id}`}
                     >
