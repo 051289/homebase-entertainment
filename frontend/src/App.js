@@ -521,6 +521,11 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
             <DAWPluginsSection user={user} />
           </TabsContent>
 
+          {/* AI Music Assistant Tab */}
+          <TabsContent value="ai-assistant" className="space-y-6">
+            <AIMusicAssistantSection user={user} projects={projects} />
+          </TabsContent>
+
           {/* Studio Settings Tab */}
           <TabsContent value="studio-settings" className="space-y-6">
             <StudioSettingsSection user={user} />
