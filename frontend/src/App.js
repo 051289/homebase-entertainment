@@ -420,7 +420,7 @@ const StudioDashboard = ({ user }) => {
 
           {/* Contracts Tab */}
           <TabsContent value="contracts" className="space-y-6">
-            <ContractSection user={user} />
+            <ContractSection user={user} onUserUpdate={setUser} />
           </TabsContent>
 
           {/* Profile Tab */}
