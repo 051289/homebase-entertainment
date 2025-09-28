@@ -640,19 +640,6 @@ async def respond_to_collaboration(response: CollaborationResponse):
     
     return {"message": f"Invitation {response.action}ed successfully"}
 
-@api_router.get("/soundpacks/premium", response_model=List[SoundPack])
-async def get_premium_sound_packs(user_id: str):
-    """Get premium sound packs (requires membership)"""
-    user = await db.users.find_one({"id": user_id})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if not user.get("premium_sound_packs", False):
-        raise HTTPException(status_code=403, detail="Premium membership required for premium sound packs")
-    
-    packs = await db.sound_packs.find({"is_premium": True}).to_list(1000)
-    return [SoundPack(**pack) for pack in packs]
-
 @api_router.post("/admin/init-premium-packs")
 async def initialize_premium_sound_packs():
     """Initialize premium sound packs for demo purposes"""
