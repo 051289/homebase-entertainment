@@ -182,13 +182,13 @@ class RecordingStudioAPITester:
 
     def test_create_sound_pack(self):
         """Test sound pack creation"""
+        # Send as FormData like the frontend would
         pack_data = {
             "name": "Test Hip-Hop Pack",
             "description": "A collection of hip-hop beats and samples",
             "genre": "Hip-Hop",
             "author": "Test Producer",
-            "tags": ["hip-hop", "beats", "samples"],
-            "is_premium": False
+            "is_premium": "false"  # Form data sends as string
         }
         
         success, response = self.run_test(
