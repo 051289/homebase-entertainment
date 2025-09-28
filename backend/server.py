@@ -383,6 +383,222 @@ async def get_contracts(user_id: Optional[str] = None):
     contracts = await db.contracts.find(filter_query).to_list(1000)
     return [Contract(**contract) for contract in contracts]
 
+# BandLab Membership Endpoints
+@api_router.get("/membership/plans", response_model=List[MembershipPlan])
+async def get_membership_plans():
+    # Check if plans exist, if not create default plans
+    plans = await db.membership_plans.find().to_list(1000)
+    if not plans:
+        default_plans = [
+            MembershipPlan(
+                name="Free",
+                tier="free",
+                price_monthly=0.0,
+                price_yearly=0.0,
+                features=[
+                    "1GB Cloud Storage",
+                    "2 Collaborators per project",
+                    "Basic sound packs",
+                    "5 downloads per month"
+                ],
+                cloud_storage_gb=1,
+                max_collaborators=2,
+                premium_sound_packs=False,
+                monthly_download_limit=5
+            ),
+            MembershipPlan(
+                name="BandLab Basic",
+                tier="bandlab_basic",
+                price_monthly=9.99,
+                price_yearly=99.99,
+                features=[
+                    "10GB Cloud Storage",
+                    "5 Collaborators per project",
+                    "Premium sound packs access",
+                    "50 downloads per month",
+                    "BandLab integration"
+                ],
+                cloud_storage_gb=10,
+                max_collaborators=5,
+                premium_sound_packs=True,
+                monthly_download_limit=50
+            ),
+            MembershipPlan(
+                name="BandLab Pro",
+                tier="bandlab_pro",
+                price_monthly=19.99,
+                price_yearly=199.99,
+                features=[
+                    "50GB Cloud Storage",
+                    "15 Collaborators per project",
+                    "All premium sound packs",
+                    "200 downloads per month",
+                    "Advanced collaboration tools",
+                    "Pro Tools integration",
+                    "FL Studio integration"
+                ],
+                cloud_storage_gb=50,
+                max_collaborators=15,
+                premium_sound_packs=True,
+                monthly_download_limit=200
+            ),
+            MembershipPlan(
+                name="BandLab Premium",
+                tier="bandlab_premium",
+                price_monthly=39.99,
+                price_yearly=399.99,
+                features=[
+                    "200GB Cloud Storage",
+                    "Unlimited Collaborators",
+                    "Exclusive sound packs",
+                    "Unlimited downloads",
+                    "Priority support",
+                    "Advanced mixing tools",
+                    "Professional distribution"
+                ],
+                cloud_storage_gb=200,
+                max_collaborators=999,
+                premium_sound_packs=True,
+                monthly_download_limit=999999
+            )
+        ]
+        
+        for plan in default_plans:
+            await db.membership_plans.insert_one(plan.dict())
+        
+        plans = [plan.dict() for plan in default_plans]
+    
+    return [MembershipPlan(**plan) for plan in plans]
+
+@api_router.post("/membership/upgrade")
+async def upgrade_membership(upgrade: UserUpgrade):
+    # Get the plan details
+    plan = await db.membership_plans.find_one({"tier": upgrade.new_tier})
+    if not plan:
+        raise HTTPException(status_code=404, detail="Membership plan not found")
+    
+    # Update user membership
+    await db.users.update_one(
+        {"id": upgrade.user_id},
+        {
+            "$set": {
+                "membership_tier": upgrade.new_tier,
+                "cloud_storage_gb": plan["cloud_storage_gb"],
+                "max_collaborators": plan["max_collaborators"],
+                "premium_sound_packs": plan["premium_sound_packs"],
+                "collaboration_enabled": True if upgrade.new_tier != "free" else False,
+                "monthly_downloads": 0,  # Reset download count
+                "last_download_reset": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"id": upgrade.user_id})
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": f"Successfully upgraded to {plan['name']}", "user": User(**updated_user)}
+
+@api_router.post("/membership/connect-bandlab")
+async def connect_bandlab_account(user_id: str = Form(...), bandlab_username: str = Form(...)):
+    """Simulate connecting to BandLab account"""
+    await db.users.update_one(
+        {"id": user_id},
+        {
+            "$set": {
+                "bandlab_connected": True,
+                "bandlab_username": bandlab_username,
+                "collaboration_enabled": True
+            }
+        }
+    )
+    
+    return {"message": "BandLab account connected successfully"}
+
+# Collaboration Endpoints
+@api_router.post("/collaboration/invite", response_model=CollaborationInvite)
+async def invite_collaborator(invite: CollaborationInviteCreate, from_user_id: str = Form(...)):
+    # Get the inviting user
+    from_user = await db.users.find_one({"id": from_user_id})
+    if not from_user:
+        raise HTTPException(status_code=404, detail="Inviting user not found")
+    
+    # Get the invited user by username
+    to_user = await db.users.find_one({"username": invite.to_username})
+    if not to_user:
+        raise HTTPException(status_code=404, detail="User to invite not found")
+    
+    # Check if project exists and belongs to the inviting user
+    project = await db.projects.find_one({"id": invite.project_id, "user_id": from_user_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found or access denied")
+    
+    # Check collaboration limits
+    current_collaborators = len(project.get("collaborators", []))
+    if current_collaborators >= from_user.get("max_collaborators", 2):
+        raise HTTPException(status_code=400, detail="Collaboration limit reached for your membership tier")
+    
+    collaboration_invite = CollaborationInvite(
+        project_id=invite.project_id,
+        from_user_id=from_user_id,
+        to_user_id=to_user["id"],
+        from_username=from_user["username"],
+        to_username=invite.to_username
+    )
+    
+    await db.collaboration_invites.insert_one(collaboration_invite.dict())
+    return collaboration_invite
+
+@api_router.get("/collaboration/invites/{user_id}", response_model=List[CollaborationInvite])
+async def get_collaboration_invites(user_id: str):
+    """Get pending collaboration invites for a user"""
+    invites = await db.collaboration_invites.find({
+        "to_user_id": user_id,
+        "status": "pending"
+    }).to_list(1000)
+    return [CollaborationInvite(**invite) for invite in invites]
+
+@api_router.post("/collaboration/respond")
+async def respond_to_collaboration(response: CollaborationResponse):
+    # Get the invite
+    invite = await db.collaboration_invites.find_one({"id": response.invite_id})
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    
+    # Update invite status
+    await db.collaboration_invites.update_one(
+        {"id": response.invite_id},
+        {
+            "$set": {
+                "status": "accepted" if response.action == "accept" else "rejected",
+                "responded_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # If accepted, add user to project collaborators
+    if response.action == "accept":
+        await db.projects.update_one(
+            {"id": invite["project_id"]},
+            {"$addToSet": {"collaborators": invite["to_user_id"]}}
+        )
+    
+    return {"message": f"Invitation {response.action}ed successfully"}
+
+@api_router.get("/soundpacks/premium", response_model=List[SoundPack])
+async def get_premium_sound_packs(user_id: str):
+    """Get premium sound packs (requires membership)"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.get("premium_sound_packs", False):
+        raise HTTPException(status_code=403, detail="Premium membership required for premium sound packs")
+    
+    packs = await db.sound_packs.find({"is_premium": True}).to_list(1000)
+    return [SoundPack(**pack) for pack in packs]
+
 # Include the router in the main app
 app.include_router(api_router)
 
