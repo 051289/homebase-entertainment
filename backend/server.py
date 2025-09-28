@@ -598,11 +598,11 @@ async def invite_collaborator(
         raise HTTPException(status_code=400, detail="Collaboration limit reached for your membership tier")
     
     collaboration_invite = CollaborationInvite(
-        project_id=invite.project_id,
+        project_id=project_id,
         from_user_id=from_user_id,
         to_user_id=to_user["id"],
         from_username=from_user["username"],
-        to_username=invite.to_username
+        to_username=to_username
     )
     
     await db.collaboration_invites.insert_one(collaboration_invite.dict())
