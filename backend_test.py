@@ -197,7 +197,8 @@ class RecordingStudioAPITester:
             "POST",
             "soundpacks",
             200,
-            data=pack_data
+            data=pack_data,
+            use_json=False
         )
         
         if success and 'id' in response:
