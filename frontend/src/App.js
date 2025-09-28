@@ -351,6 +351,7 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
             <TabsTrigger value="studio" className="data-[state=active]:bg-purple-600" data-testid="studio-tab">Recording Studio</TabsTrigger>
             <TabsTrigger value="packs" className="data-[state=active]:bg-purple-600" data-testid="soundpacks-tab">Sound Packs</TabsTrigger>
             <TabsTrigger value="daw" className="data-[state=active]:bg-purple-600" data-testid="daw-tab">DAW Plugins</TabsTrigger>
+            <TabsTrigger value="ai-assistant" className="data-[state=active]:bg-purple-600" data-testid="ai-assistant-tab">🤖 AI Assistant</TabsTrigger>
             <TabsTrigger value="studio-settings" className="data-[state=active]:bg-purple-600" data-testid="studio-settings-tab">Studio Settings</TabsTrigger>
             <TabsTrigger value="membership" className="data-[state=active]:bg-purple-600" data-testid="membership-tab">BandLab Membership</TabsTrigger>
             <TabsTrigger value="collaboration" className="data-[state=active]:bg-purple-600" data-testid="collaboration-tab">Collaboration</TabsTrigger>
