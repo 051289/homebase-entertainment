@@ -1042,7 +1042,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
                     max="200"
                     value={compositionForm.tempo}
                     onChange={(e) => setCompositionForm({...compositionForm, tempo: parseInt(e.target.value)})}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black border-blue-800 text-white"
                     data-testid="composition-tempo"
                   />
                 </div>
@@ -1176,7 +1176,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
                     max="8"
                     value={theoryForm.length}
                     onChange={(e) => setTheoryForm({...theoryForm, length: parseInt(e.target.value)})}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black border-blue-800 text-white"
                     data-testid="theory-length"
                   />
                 </div>
@@ -1909,7 +1909,7 @@ const CollaborationSection = ({ user }) => {
                     value={inviteUsername}
                     onChange={(e) => setInviteUsername(e.target.value)}
                     placeholder="Enter username"
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black border-blue-800 text-white"
                     data-testid="invite-username-input"
                   />
                 </div>
