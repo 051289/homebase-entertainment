@@ -365,7 +365,7 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
               <h2 className="text-2xl font-bold">Your Projects</h2>
               <Button 
                 onClick={createProject}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 data-testid="create-project-btn"
               >
                 Create New Project
@@ -2104,7 +2104,7 @@ const ContractSection = ({ user, onUserUpdate }) => {
                   <div className="flex gap-4">
                     <Button 
                       onClick={() => signContract(contract.id)}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                       data-testid={`sign-contract-${contract.id}`}
                     >
                       Sign Contract
