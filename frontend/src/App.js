@@ -547,6 +547,505 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
   );
 };
 
+// DAW Plugins Section Component
+const DAWPluginsSection = ({ user }) => {
+  const [plugins, setPlugins] = useState([]);
+  const [selectedDAW, setSelectedDAW] = useState('both');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlugins();
+  }, [selectedDAW, selectedCategory, user]);
+
+  const fetchPlugins = async () => {
+    try {
+      let query = `user_id=${user.id}`;
+      if (selectedDAW !== 'both') query += `&daw=${selectedDAW}`;
+      if (selectedCategory) query += `&category=${selectedCategory}`;
+      
+      const response = await axios.get(`${API}/daw/plugins?${query}`);
+      setPlugins(response.data);
+    } catch (error) {
+      toast.error('Failed to load DAW plugins');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportProject = async (projectId, dawFormat) => {
+    try {
+      const formData = new FormData();
+      formData.append('daw_format', dawFormat);
+      formData.append('user_id', user.id);
+      
+      const response = await axios.post(`${API}/projects/${projectId}/export`, formData);
+      toast.success(`Project exported to ${dawFormat.replace('_', ' ').toUpperCase()} format!`);
+    } catch (error) {
+      toast.error('Failed to export project');
+    }
+  };
+
+  const categories = ['compressor', 'reverb', 'equalizer', 'synthesizer', 'limiter', 'delay'];
+
+  if (loading) return <div className="text-center">Loading DAW plugins...</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">🎛️ DAW Plugins & Integration</h2>
+        <div className="flex gap-4">
+          <select
+            value={selectedDAW}
+            onChange={(e) => setSelectedDAW(e.target.value)}
+            className="p-2 bg-slate-700 border border-slate-600 text-white rounded"
+            data-testid="daw-filter"
+          >
+            <option value="both">All DAWs</option>
+            <option value="pro_tools">Pro Tools</option>
+            <option value="fl_studio">FL Studio</option>
+          </select>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="p-2 bg-slate-700 border border-slate-600 text-white rounded"
+            data-testid="category-filter"
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* DAW Integration Info */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">Professional DAW Integration</CardTitle>
+          <CardDescription className="text-gray-300">
+            Export your projects to Pro Tools and FL Studio formats, and access professional plugins
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-slate-700 rounded">
+              <div className="w-12 h-12 bg-blue-600 rounded flex items-center justify-center">
+                <span className="text-white font-bold">PT</span>
+              </div>
+              <div>
+                <div className="text-white font-medium">Pro Tools Integration</div>
+                <div className="text-gray-400 text-sm">Professional mixing and mastering</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-slate-700 rounded">
+              <div className="w-12 h-12 bg-orange-600 rounded flex items-center justify-center">
+                <span className="text-white font-bold">FL</span>
+              </div>
+              <div>
+                <div className="text-white font-medium">FL Studio Integration</div>
+                <div className="text-gray-400 text-sm">Beat making and production</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Plugin Library */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {plugins.map((plugin) => (
+          <Card key={plugin.id} className="bg-slate-800 border-slate-700 hover:bg-slate-750 transition-colors" data-testid={`plugin-card-${plugin.id}`}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-white">{plugin.name}</CardTitle>
+                  <CardDescription className="text-gray-300">{plugin.description}</CardDescription>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {plugin.is_premium && (
+                    <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400">
+                      PREMIUM
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-blue-400 border-blue-400">
+                    {plugin.category.toUpperCase()}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-gray-400">
+                  <span>Author: {plugin.author}</span>
+                  <span>v{plugin.version}</span>
+                </div>
+                <div className="text-sm text-gray-400">
+                  Compatible: {plugin.daw_compatibility.includes('both') ? 'Pro Tools & FL Studio' : 
+                    plugin.daw_compatibility.map(daw => daw.replace('_', ' ')).join(', ')}
+                </div>
+                <div className="text-sm text-gray-400">
+                  Parameters: {plugin.parameters?.length || 0}
+                </div>
+                
+                {plugin.is_premium && !user.premium_sound_packs ? (
+                  <Button 
+                    disabled
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-4 opacity-50 cursor-not-allowed"
+                  >
+                    Premium Required
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-4 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white"
+                    data-testid={`load-plugin-${plugin.id}`}
+                  >
+                    Load Plugin
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        
+        {plugins.length === 0 && (
+          <div className="col-span-full text-center py-12">
+            <div className="text-gray-400 text-lg mb-4">No plugins found</div>
+            <p className="text-gray-500">Try adjusting your filters or check back later</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Studio Settings Section Component  
+const StudioSettingsSection = ({ user }) => {
+  const [studioSettings, setStudioSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    fetchStudioSettings();
+  }, [user]);
+
+  const fetchStudioSettings = async () => {
+    try {
+      const response = await axios.get(`${API}/studio/settings/${user.id}`);
+      setStudioSettings(response.data);
+    } catch (error) {
+      toast.error('Failed to load studio settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSetting = async (key, value) => {
+    setUpdating(true);
+    try {
+      await axios.put(`${API}/studio/settings/${user.id}`, {
+        [key]: value
+      });
+      setStudioSettings(prev => ({ ...prev, [key]: value }));
+      toast.success('Setting updated successfully');
+    } catch (error) {
+      toast.error('Failed to update setting');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const updateAudioInterface = async (settings) => {
+    setUpdating(true);
+    try {
+      await axios.put(`${API}/studio/audio-interface/${user.id}`, settings);
+      toast.success('Audio interface updated successfully');
+      await fetchStudioSettings();
+    } catch (error) {
+      toast.error('Failed to update audio interface');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const configureSurround = async (format, enabled) => {
+    setUpdating(true);
+    try {
+      const formData = new FormData();
+      formData.append('surround_format', format);
+      formData.append('enable_surround', enabled);
+      
+      const response = await axios.post(`${API}/studio/surround-sound/${user.id}/configure`, formData);
+      toast.success(response.data.message);
+      await fetchStudioSettings();
+    } catch (error) {
+      toast.error('Failed to configure surround sound');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) return <div className="text-center">Loading studio settings...</div>;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">🎚️ Professional Studio Settings</h2>
+
+      {/* Sound-proof Studio Settings */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">🔇 Sound-proof Studio Environment</CardTitle>
+          <CardDescription className="text-gray-300">
+            Configure your virtual sound-proof studio with professional acoustic treatment
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-white">Room Size</Label>
+              <select
+                value={studioSettings?.room_size || 'medium'}
+                onChange={(e) => updateSetting('room_size', e.target.value)}
+                disabled={updating}
+                className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                data-testid="room-size-select"
+              >
+                <option value="small">Small Room (10x12 ft)</option>
+                <option value="medium">Medium Room (16x20 ft)</option>
+                <option value="large">Large Room (24x30 ft)</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-white">Acoustic Treatment</Label>
+              <select
+                value={studioSettings?.acoustic_treatment || 'moderate'}
+                onChange={(e) => updateSetting('acoustic_treatment', e.target.value)}
+                disabled={updating}
+                className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                data-testid="acoustic-treatment-select"
+              >
+                <option value="minimal">Minimal Treatment</option>
+                <option value="moderate">Moderate Treatment</option>
+                <option value="professional">Professional Treatment</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="text-white">Noise Reduction: {Math.round((studioSettings?.noise_reduction || 0.7) * 100)}%</Label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={studioSettings?.noise_reduction || 0.7}
+              onChange={(e) => updateSetting('noise_reduction', parseFloat(e.target.value))}
+              disabled={updating}
+              className="w-full mt-2"
+              data-testid="noise-reduction-slider"
+            />
+          </div>
+          
+          <div>
+            <Label className="text-white">Reverb Simulation</Label>
+            <select
+              value={studioSettings?.reverb_simulation || 'studio'}
+              onChange={(e) => updateSetting('reverb_simulation', e.target.value)}
+              disabled={updating}
+              className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+              data-testid="reverb-select"
+            >
+              <option value="studio">Studio</option>
+              <option value="hall">Concert Hall</option>
+              <option value="church">Church</option>
+              <option value="chamber">Chamber</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Presonus Audiobox 96 Interface */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">🎤 Presonus Audiobox 96 Interface</CardTitle>
+          <CardDescription className="text-gray-300">
+            Professional audio interface with 2 inputs and 2 outputs
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-white">Sample Rate</Label>
+              <select
+                value={studioSettings?.audio_interface?.sample_rate || 44100}
+                onChange={(e) => updateAudioInterface({sample_rate: parseInt(e.target.value)})}
+                disabled={updating}
+                className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                data-testid="sample-rate-select"
+              >
+                <option value={44100}>44.1 kHz</option>
+                <option value={48000}>48 kHz</option>
+                <option value={96000}>96 kHz</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-white">Buffer Size</Label>
+              <select
+                value={studioSettings?.audio_interface?.buffer_size || 256}
+                onChange={(e) => updateAudioInterface({buffer_size: parseInt(e.target.value)})}
+                disabled={updating}
+                className="w-full p-2 bg-slate-700 border border-slate-600 text-white rounded"
+                data-testid="buffer-size-select"
+              >
+                <option value={64}>64 samples</option>
+                <option value={128}>128 samples</option>
+                <option value={256}>256 samples</option>
+                <option value={512}>512 samples</option>
+                <option value={1024}>1024 samples</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={studioSettings?.audio_interface?.phantom_power || false}
+                onChange={(e) => updateAudioInterface({phantom_power: e.target.checked})}
+                disabled={updating}
+                data-testid="phantom-power-checkbox"
+              />
+              <span className="text-white">48V Phantom Power</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={studioSettings?.audio_interface?.direct_monitoring || true}
+                onChange={(e) => updateAudioInterface({direct_monitoring: e.target.checked})}
+                disabled={updating}
+                data-testid="direct-monitoring-checkbox"
+              />
+              <span className="text-white">Direct Monitoring</span>
+            </label>
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="text-white">Input Gain</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-gray-400">Input 1: {Math.round((studioSettings?.audio_interface?.input_gain?.[0] || 0.5) * 100)}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={studioSettings?.audio_interface?.input_gain?.[0] || 0.5}
+                  onChange={(e) => {
+                    const newGain = [...(studioSettings?.audio_interface?.input_gain || [0.5, 0.5])];
+                    newGain[0] = parseFloat(e.target.value);
+                    updateAudioInterface({input_gain: newGain});
+                  }}
+                  disabled={updating}
+                  className="w-full"
+                  data-testid="input-gain-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400">Input 2: {Math.round((studioSettings?.audio_interface?.input_gain?.[1] || 0.5) * 100)}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={studioSettings?.audio_interface?.input_gain?.[1] || 0.5}
+                  onChange={(e) => {
+                    const newGain = [...(studioSettings?.audio_interface?.input_gain || [0.5, 0.5])];
+                    newGain[1] = parseFloat(e.target.value);
+                    updateAudioInterface({input_gain: newGain});
+                  }}
+                  disabled={updating}
+                  className="w-full"
+                  data-testid="input-gain-2"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Creative Sound Blaster Surround Sound */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-white">🔊 Creative Sound Blaster Surround Sound</CardTitle>
+          <CardDescription className="text-gray-300">
+            Multi-channel audio routing and 3D surround sound positioning
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4 mb-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={studioSettings?.surround_enabled || false}
+                onChange={(e) => configureSurround(studioSettings?.surround_format || 'stereo', e.target.checked)}
+                disabled={updating}
+                data-testid="surround-enabled-checkbox"
+              />
+              <span className="text-white">Enable Surround Sound</span>
+            </label>
+          </div>
+          
+          <div>
+            <Label className="text-white">Surround Format</Label>
+            <div className="grid grid-cols-3 gap-4 mt-2">
+              {['stereo', '5.1', '7.1'].map(format => (
+                <button
+                  key={format}
+                  onClick={() => configureSurround(format, studioSettings?.surround_enabled || false)}
+                  disabled={updating}
+                  className={`p-3 rounded border ${
+                    studioSettings?.surround_format === format
+                      ? 'bg-purple-600 border-purple-400 text-white'
+                      : 'bg-slate-700 border-slate-600 text-gray-300 hover:bg-slate-600'
+                  }`}
+                  data-testid={`surround-format-${format}`}
+                >
+                  <div className="font-medium">{format.toUpperCase()}</div>
+                  <div className="text-sm">
+                    {format === 'stereo' ? '2 Speakers' : 
+                     format === '5.1' ? '6 Speakers' : '8 Speakers'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {studioSettings?.speaker_positions && studioSettings.speaker_positions.length > 0 && (
+            <div>
+              <Label className="text-white mb-2 block">Speaker Configuration</Label>
+              <div className="bg-slate-700 p-4 rounded">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {studioSettings.speaker_positions.map((speaker, index) => (
+                    <div key={index} className="text-center p-2 bg-slate-600 rounded">
+                      <div className="text-white text-sm font-medium">{speaker.name}</div>
+                      <div className="text-gray-400 text-xs">
+                        X: {speaker.x}, Y: {speaker.y}, Z: {speaker.z}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // BandLab Membership Section Component
 const MembershipSection = ({ user, onUserUpdate }) => {
   const [membershipPlans, setMembershipPlans] = useState([]);
