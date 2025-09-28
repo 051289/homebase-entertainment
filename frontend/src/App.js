@@ -693,7 +693,7 @@ function App() {
             path="/studio" 
             element={
               user ? (
-                <StudioDashboard user={user} />
+                <StudioDashboard user={user} onUserUpdate={setUser} />
               ) : (
                 <Navigate to="/" replace />
               )
