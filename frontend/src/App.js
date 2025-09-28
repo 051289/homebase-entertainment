@@ -23,10 +23,8 @@ const LandingPage = ({ onGetStarted }) => {
     <div className="min-h-screen bg-gradient-to-br from-black via-blue-900 to-slate-900">
       {/* Navigation */}
       <nav className="absolute top-0 w-full z-50 p-6">
-        <div className="max-w-7xl mx-auto flex justify-center items-center">
-          <div className="text-2xl font-bold text-white">
-            T.H.U.G N HOMEBASE ENT.
-          </div>
+        <div className="max-w-7xl mx-auto">
+          {/* Clean minimal navigation */}
         </div>
       </nav>
 
