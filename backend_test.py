@@ -511,6 +511,7 @@ class RecordingStudioAPITester:
             print("❌ Skipping - No test user available")
             return False
             
+        # The endpoint expects user_id as a query parameter, not in the URL path
         success, response = self.run_test(
             "Get Premium Sound Packs",
             "GET",
