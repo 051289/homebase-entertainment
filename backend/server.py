@@ -300,8 +300,16 @@ async def upload_to_sound_pack(pack_id: str, file: UploadFile = File(...)):
     return {"filename": unique_filename, "message": "Audio added to sound pack"}
 
 @api_router.get("/soundpacks", response_model=List[SoundPack])
-async def get_sound_packs(genre: Optional[str] = None):
+async def get_sound_packs(genre: Optional[str] = None, user_id: Optional[str] = None):
     filter_query = {"genre": genre} if genre else {}
+    
+    # If user_id provided, filter based on membership
+    if user_id:
+        user = await db.users.find_one({"id": user_id})
+        if user and not user.get("premium_sound_packs", False):
+            # Only show non-premium packs for free users
+            filter_query["is_premium"] = False
+    
     packs = await db.sound_packs.find(filter_query).to_list(1000)
     return [SoundPack(**pack) for pack in packs]
 
