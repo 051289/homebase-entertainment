@@ -231,6 +231,49 @@ class AudioInterfaceSettings(BaseModel):
     direct_monitoring: Optional[bool] = None
     input_gain: Optional[List[float]] = None
 
+# AI Music Assistant Models
+class MusicCompositionRequest(BaseModel):
+    genre: str
+    mood: str
+    key: Optional[str] = "C major"
+    tempo: Optional[int] = 120
+    instruments: List[str] = []
+    additional_info: Optional[str] = None
+
+class MixingAnalysisRequest(BaseModel):
+    project_id: str
+    focus_areas: List[str] = []  # eq, compression, reverb, stereo_width, levels
+
+class ChordProgressionRequest(BaseModel):
+    key: str = "C major"
+    genre: str = "pop"
+    length: int = 4  # Number of chords
+    complexity: str = "intermediate"  # beginner, intermediate, advanced
+
+class AIConversation(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    session_id: str
+    conversation_type: str  # composition, mixing, theory, general
+    messages: List[dict] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AIMessage(BaseModel):
+    role: str  # user, assistant, system
+    content: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: Optional[dict] = None
+
+class TrackAnalysis(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    track_name: str
+    analysis_type: str  # frequency, dynamics, tempo, key
+    results: dict
+    suggestions: List[str] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Authentication endpoints
 @api_router.post("/auth/register", response_model=User)
 async def register_user(user_data: UserCreate):
