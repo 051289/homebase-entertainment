@@ -244,6 +244,13 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
 
   const fetchData = async () => {
     try {
+      // Initialize premium packs if needed
+      try {
+        await axios.post(`${API}/admin/init-premium-packs`);
+      } catch (error) {
+        // Ignore if already initialized
+      }
+      
       const [projectsRes, soundPacksRes] = await Promise.all([
         axios.get(`${API}/projects?user_id=${user.id}`),
         axios.get(`${API}/soundpacks?user_id=${user.id}`)
