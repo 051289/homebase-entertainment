@@ -20,7 +20,7 @@ const API = `${BACKEND_URL}/api`;
 // Landing Page Component
 const LandingPage = ({ onGetStarted }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-black via-blue-900 to-slate-900">
       {/* Navigation */}
       <nav className="absolute top-0 w-full z-50 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
