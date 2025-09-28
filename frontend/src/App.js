@@ -61,7 +61,7 @@ const LandingPage = ({ onGetStarted }) => {
             <Button 
               onClick={onGetStarted}
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
               data-testid="hero-get-started-btn"
             >
               Start Recording Now
