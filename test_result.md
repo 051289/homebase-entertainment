@@ -152,7 +152,11 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Pro Tools and FL Studio plug-ins integration"
+    - "Sound-proof recording studio features"
+    - "Presonus Audiobox 96 interface integration"
+    - "Creative Sound Blaster surround sound"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
