@@ -630,6 +630,521 @@ class RecordingStudioAPITester:
             return True
         return False
 
+    # Advanced Studio Features Tests
+    
+    def test_initialize_daw_plugins(self):
+        """Test initializing DAW plugins"""
+        success, response = self.run_test(
+            "Initialize DAW Plugins",
+            "POST",
+            "admin/init-daw-plugins",
+            200
+        )
+        
+        if success and 'message' in response:
+            print(f"   {response['message']}")
+            return True
+        return False
+
+    def test_get_daw_plugins_all(self):
+        """Test getting all DAW plugins"""
+        success, response = self.run_test(
+            "Get All DAW Plugins",
+            "GET",
+            "daw/plugins",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} DAW plugins")
+            if len(response) > 0:
+                # Store first plugin for detailed testing
+                self.test_plugin = response[0]
+                print(f"   Sample plugin: {response[0].get('name')} ({response[0].get('category')})")
+            return True
+        return False
+
+    def test_get_daw_plugins_filtered_by_daw(self):
+        """Test getting DAW plugins filtered by DAW compatibility"""
+        test_cases = [
+            ("pro_tools", "Pro Tools"),
+            ("fl_studio", "FL Studio"),
+            ("both", "Universal")
+        ]
+        
+        all_passed = True
+        for daw_filter, daw_name in test_cases:
+            success, response = self.run_test(
+                f"Get {daw_name} Compatible Plugins",
+                "GET",
+                f"daw/plugins?daw={daw_filter}",
+                200
+            )
+            
+            if success and isinstance(response, list):
+                compatible_count = sum(1 for plugin in response 
+                                     if daw_filter in plugin.get('daw_compatibility', []) or 
+                                        'both' in plugin.get('daw_compatibility', []))
+                print(f"   Found {len(response)} plugins compatible with {daw_name}")
+                if len(response) != compatible_count:
+                    print(f"   ⚠️  Warning: {len(response) - compatible_count} plugins may have incorrect compatibility")
+            else:
+                all_passed = False
+                
+        return all_passed
+
+    def test_get_daw_plugins_filtered_by_category(self):
+        """Test getting DAW plugins filtered by category"""
+        test_categories = ["compressor", "reverb", "equalizer", "synthesizer", "limiter", "delay"]
+        
+        all_passed = True
+        for category in test_categories:
+            success, response = self.run_test(
+                f"Get {category.title()} Plugins",
+                "GET",
+                f"daw/plugins?category={category}",
+                200
+            )
+            
+            if success and isinstance(response, list):
+                category_count = sum(1 for plugin in response if plugin.get('category') == category)
+                print(f"   Found {len(response)} {category} plugins")
+                if len(response) != category_count:
+                    print(f"   ⚠️  Warning: {len(response) - category_count} plugins have incorrect category")
+            else:
+                all_passed = False
+                
+        return all_passed
+
+    def test_get_daw_plugins_premium_filter(self):
+        """Test DAW plugin premium access filtering"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        # Test with premium user (should see all plugins)
+        success, response = self.run_test(
+            "Get DAW Plugins (Premium User)",
+            "GET",
+            f"daw/plugins?user_id={self.test_user['id']}",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            premium_count = sum(1 for plugin in response if plugin.get('is_premium', False))
+            print(f"   Premium user sees {len(response)} plugins ({premium_count} premium)")
+            return True
+        return False
+
+    def test_create_daw_plugin(self):
+        """Test creating a new DAW plugin"""
+        plugin_data = {
+            "name": "Test Studio Compressor",
+            "category": "compressor",
+            "daw_compatibility": ["both"],
+            "author": "T.H.U.G N HOMEBASE ENT.",
+            "version": "1.0",
+            "is_premium": False,
+            "description": "A test compressor plugin for studio use"
+        }
+        
+        success, response = self.run_test(
+            "Create DAW Plugin",
+            "POST",
+            "daw/plugins",
+            200,
+            data=plugin_data
+        )
+        
+        if success and 'id' in response:
+            self.test_created_plugin = response
+            print(f"   Created plugin: {response['name']} (ID: {response['id']})")
+            return True
+        return False
+
+    def test_get_daw_plugin_by_id(self):
+        """Test getting specific DAW plugin details"""
+        if not hasattr(self, 'test_plugin') or not self.test_plugin:
+            print("❌ Skipping - No test plugin available")
+            return False
+            
+        success, response = self.run_test(
+            "Get DAW Plugin by ID",
+            "GET",
+            f"daw/plugins/{self.test_plugin['id']}",
+            200
+        )
+        
+        if success and response.get('id') == self.test_plugin['id']:
+            print(f"   Retrieved plugin: {response['name']} - {response['description']}")
+            # Verify plugin has required fields
+            required_fields = ['name', 'category', 'daw_compatibility', 'author', 'version']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                print(f"   ⚠️  Missing fields: {missing_fields}")
+                return False
+            return True
+        return False
+
+    def test_project_daw_export(self):
+        """Test exporting project to DAW formats"""
+        if not self.test_user or not self.test_project:
+            print("❌ Skipping - No test user or project available")
+            return False
+            
+        # Test Pro Tools export
+        export_data = {
+            "daw_format": "pro_tools",
+            "user_id": self.test_user['id']
+        }
+        
+        success, response = self.run_test(
+            "Export Project to Pro Tools",
+            "POST",
+            f"projects/{self.test_project['id']}/export",
+            200,
+            data=export_data,
+            use_json=False
+        )
+        
+        if success and 'id' in response:
+            print(f"   Pro Tools export created (ID: {response['id']})")
+            if response.get('daw_format') == 'pro_tools' and response.get('status') == 'completed':
+                print(f"   Export settings: {response.get('export_settings', {})}")
+            else:
+                print(f"   ⚠️  Export format or status incorrect")
+                return False
+        else:
+            return False
+            
+        # Test FL Studio export
+        export_data['daw_format'] = 'fl_studio'
+        success, response = self.run_test(
+            "Export Project to FL Studio",
+            "POST",
+            f"projects/{self.test_project['id']}/export",
+            200,
+            data=export_data,
+            use_json=False
+        )
+        
+        if success and response.get('daw_format') == 'fl_studio':
+            print(f"   FL Studio export created (ID: {response['id']})")
+            return True
+        return False
+
+    def test_get_studio_settings(self):
+        """Test getting user studio settings (should create defaults if not exist)"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        success, response = self.run_test(
+            "Get Studio Settings",
+            "GET",
+            f"studio/settings/{self.test_user['id']}",
+            200
+        )
+        
+        if success and 'user_id' in response:
+            # Verify default settings structure
+            expected_fields = ['room_size', 'acoustic_treatment', 'noise_reduction', 'reverb_simulation',
+                             'surround_enabled', 'surround_format', 'speaker_positions', 'audio_interface']
+            missing_fields = [field for field in expected_fields if field not in response]
+            
+            if missing_fields:
+                print(f"   ⚠️  Missing studio settings fields: {missing_fields}")
+                return False
+                
+            print(f"   Studio settings retrieved: Room={response.get('room_size')}, "
+                  f"Treatment={response.get('acoustic_treatment')}, "
+                  f"Noise Reduction={response.get('noise_reduction')}")
+            self.test_studio_settings = response
+            return True
+        return False
+
+    def test_update_studio_settings(self):
+        """Test updating sound-proof studio settings"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        settings_update = {
+            "room_size": "large",
+            "acoustic_treatment": "professional",
+            "noise_reduction": 0.9,
+            "reverb_simulation": "hall"
+        }
+        
+        success, response = self.run_test(
+            "Update Studio Settings",
+            "PUT",
+            f"studio/settings/{self.test_user['id']}",
+            200,
+            data=settings_update
+        )
+        
+        if success and 'message' in response:
+            print(f"   {response['message']}")
+            
+            # Verify settings were updated by getting them again
+            verify_success, verify_response = self.run_test(
+                "Verify Studio Settings Update",
+                "GET",
+                f"studio/settings/{self.test_user['id']}",
+                200
+            )
+            
+            if verify_success:
+                updated_correctly = all(
+                    verify_response.get(key) == value 
+                    for key, value in settings_update.items()
+                )
+                if updated_correctly:
+                    print(f"   Settings verified: Room={verify_response.get('room_size')}, "
+                          f"Treatment={verify_response.get('acoustic_treatment')}, "
+                          f"Noise Reduction={verify_response.get('noise_reduction')}")
+                    return True
+                else:
+                    print(f"   ⚠️  Settings not updated correctly")
+                    return False
+            return False
+        return False
+
+    def test_update_audio_interface_settings(self):
+        """Test updating Presonus Audiobox 96 interface settings"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        interface_settings = {
+            "sample_rate": 48000,
+            "buffer_size": 512,
+            "phantom_power": True,
+            "direct_monitoring": False,
+            "input_gain": [0.7, 0.8]
+        }
+        
+        success, response = self.run_test(
+            "Update Audio Interface Settings",
+            "PUT",
+            f"studio/audio-interface/{self.test_user['id']}",
+            200,
+            data=interface_settings
+        )
+        
+        if success and 'message' in response:
+            print(f"   {response['message']}")
+            
+            # Verify by getting studio settings (audio interface is nested)
+            verify_success, verify_response = self.run_test(
+                "Verify Audio Interface Update",
+                "GET",
+                f"studio/settings/{self.test_user['id']}",
+                200
+            )
+            
+            if verify_success and 'audio_interface' in verify_response:
+                audio_interface = verify_response['audio_interface']
+                updated_correctly = all(
+                    audio_interface.get(key) == value 
+                    for key, value in interface_settings.items()
+                )
+                if updated_correctly:
+                    print(f"   Interface verified: Sample Rate={audio_interface.get('sample_rate')}, "
+                          f"Buffer={audio_interface.get('buffer_size')}, "
+                          f"Phantom Power={audio_interface.get('phantom_power')}")
+                    return True
+                else:
+                    print(f"   ⚠️  Audio interface settings not updated correctly")
+                    return False
+            return False
+        return False
+
+    def test_configure_surround_sound_stereo(self):
+        """Test configuring surround sound for stereo"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        surround_data = {
+            "surround_format": "stereo",
+            "enable_surround": True
+        }
+        
+        success, response = self.run_test(
+            "Configure Stereo Surround Sound",
+            "POST",
+            f"studio/surround-sound/{self.test_user['id']}/configure",
+            200,
+            data=surround_data,
+            use_json=False
+        )
+        
+        if success and 'speakers' in response:
+            expected_speakers = 2
+            if response['speakers'] == expected_speakers:
+                print(f"   Stereo configuration: {response['speakers']} speakers positioned")
+                return True
+            else:
+                print(f"   ⚠️  Expected {expected_speakers} speakers, got {response['speakers']}")
+                return False
+        return False
+
+    def test_configure_surround_sound_5_1(self):
+        """Test configuring surround sound for 5.1"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        surround_data = {
+            "surround_format": "5.1",
+            "enable_surround": True
+        }
+        
+        success, response = self.run_test(
+            "Configure 5.1 Surround Sound",
+            "POST",
+            f"studio/surround-sound/{self.test_user['id']}/configure",
+            200,
+            data=surround_data,
+            use_json=False
+        )
+        
+        if success and 'speakers' in response:
+            expected_speakers = 6  # 5.1 = 6 speakers
+            if response['speakers'] == expected_speakers:
+                print(f"   5.1 configuration: {response['speakers']} speakers positioned")
+                
+                # Verify speaker positions were set correctly
+                verify_success, verify_response = self.run_test(
+                    "Verify 5.1 Speaker Positions",
+                    "GET",
+                    f"studio/settings/{self.test_user['id']}",
+                    200
+                )
+                
+                if verify_success and verify_response.get('surround_format') == '5.1':
+                    speaker_positions = verify_response.get('speaker_positions', [])
+                    if len(speaker_positions) == 6:
+                        speaker_names = [pos.get('name') for pos in speaker_positions]
+                        print(f"   Speaker positions: {', '.join(speaker_names)}")
+                        return True
+                    else:
+                        print(f"   ⚠️  Expected 6 speaker positions, got {len(speaker_positions)}")
+                        return False
+                return False
+            else:
+                print(f"   ⚠️  Expected {expected_speakers} speakers, got {response['speakers']}")
+                return False
+        return False
+
+    def test_configure_surround_sound_7_1(self):
+        """Test configuring surround sound for 7.1"""
+        if not self.test_user:
+            print("❌ Skipping - No test user available")
+            return False
+            
+        surround_data = {
+            "surround_format": "7.1",
+            "enable_surround": True
+        }
+        
+        success, response = self.run_test(
+            "Configure 7.1 Surround Sound",
+            "POST",
+            f"studio/surround-sound/{self.test_user['id']}/configure",
+            200,
+            data=surround_data,
+            use_json=False
+        )
+        
+        if success and 'speakers' in response:
+            expected_speakers = 8  # 7.1 = 8 speakers
+            if response['speakers'] == expected_speakers:
+                print(f"   7.1 configuration: {response['speakers']} speakers positioned")
+                
+                # Verify speaker positions were set correctly
+                verify_success, verify_response = self.run_test(
+                    "Verify 7.1 Speaker Positions",
+                    "GET",
+                    f"studio/settings/{self.test_user['id']}",
+                    200
+                )
+                
+                if verify_success and verify_response.get('surround_format') == '7.1':
+                    speaker_positions = verify_response.get('speaker_positions', [])
+                    if len(speaker_positions) == 8:
+                        speaker_names = [pos.get('name') for pos in speaker_positions]
+                        print(f"   Speaker positions: {', '.join(speaker_names)}")
+                        return True
+                    else:
+                        print(f"   ⚠️  Expected 8 speaker positions, got {len(speaker_positions)}")
+                        return False
+                return False
+            else:
+                print(f"   ⚠️  Expected {expected_speakers} speakers, got {response['speakers']}")
+                return False
+        return False
+
+    def test_daw_plugin_access_restrictions(self):
+        """Test premium plugin access restrictions"""
+        # Create a free user to test restrictions
+        timestamp = datetime.now().strftime('%H%M%S')
+        free_user_data = {
+            "username": f"freeuser_daw_{timestamp}",
+            "email": f"freedaw_{timestamp}@example.com",
+            "full_name": f"Free DAW User {timestamp}",
+            "is_artist": False
+        }
+        
+        success, free_user = self.run_test(
+            "Create Free User for DAW Test",
+            "POST",
+            "auth/register",
+            200,
+            data=free_user_data
+        )
+        
+        if not success:
+            return False
+            
+        # Test DAW plugins filtering for free user (should not see premium plugins)
+        success, response = self.run_test(
+            "Get DAW Plugins (Free User)",
+            "GET",
+            f"daw/plugins?user_id={free_user['id']}",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            premium_plugins = [plugin for plugin in response if plugin.get('is_premium', False)]
+            if len(premium_plugins) == 0:
+                print(f"   Free user correctly sees {len(response)} non-premium plugins only")
+                return True
+            else:
+                print(f"   ⚠️  Free user should not see {len(premium_plugins)} premium plugins")
+                return False
+        return False
+
+    def test_studio_settings_error_cases(self):
+        """Test error cases for studio settings"""
+        # Test with non-existent user
+        fake_user_id = "non-existent-user-id"
+        
+        success, response = self.run_test(
+            "Update Settings for Non-existent User",
+            "PUT",
+            f"studio/settings/{fake_user_id}",
+            200,  # Should still work, creates new settings
+            data={"room_size": "small"}
+        )
+        
+        if success:
+            print(f"   Settings endpoint handles non-existent users correctly")
+            return True
+        return False
+
 def main():
     print("🎵 T.H.U.G N HOMEBASE ENT. Recording Studio API Test Suite")
     print("🎯 BandLab Membership Integration Testing")
