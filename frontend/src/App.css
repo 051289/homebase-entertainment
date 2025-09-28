@@ -171,14 +171,14 @@ body {
 /* Track timeline */
 .timeline {
   position: relative;
-  background: #1e293b;
+  background: #000000;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .timeline-track {
   height: 60px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid #1e40af;
   position: relative;
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@ body {
 }
 
 .timeline-content {
-  background: linear-gradient(90deg, #8b5cf6, #ec4899);
+  background: linear-gradient(90deg, #1e40af, #3b82f6);
   height: 40px;
   border-radius: 4px;
   position: relative;
