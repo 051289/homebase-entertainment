@@ -764,6 +764,281 @@ async def initialize_premium_sound_packs():
     
     return {"message": f"Initialized {len(premium_packs)} premium sound packs"}
 
+# Advanced Studio Features Endpoints
+
+# DAW Plugin Management
+@api_router.get("/daw/plugins", response_model=List[DAWPlugin])
+async def get_daw_plugins(daw: Optional[str] = None, category: Optional[str] = None, user_id: Optional[str] = None):
+    """Get available DAW plugins with optional filtering"""
+    filter_query = {}
+    
+    if daw:
+        filter_query["daw_compatibility"] = {"$in": [daw, "both"]}
+    if category:
+        filter_query["category"] = category
+    
+    # Check premium access if user_id provided
+    if user_id:
+        user = await db.users.find_one({"id": user_id})
+        if user and not user.get("premium_sound_packs", False):
+            filter_query["is_premium"] = False
+    
+    plugins = await db.daw_plugins.find(filter_query).to_list(1000)
+    return [DAWPlugin(**plugin) for plugin in plugins]
+
+@api_router.post("/daw/plugins", response_model=DAWPlugin)
+async def create_daw_plugin(plugin_data: DAWPluginCreate):
+    """Create a new DAW plugin"""
+    plugin = DAWPlugin(**plugin_data.dict())
+    await db.daw_plugins.insert_one(plugin.dict())
+    return plugin
+
+@api_router.get("/daw/plugins/{plugin_id}", response_model=DAWPlugin)
+async def get_daw_plugin(plugin_id: str):
+    """Get specific DAW plugin details"""
+    plugin = await db.daw_plugins.find_one({"id": plugin_id})
+    if not plugin:
+        raise HTTPException(status_code=404, detail="Plugin not found")
+    return DAWPlugin(**plugin)
+
+# Project DAW Export
+@api_router.post("/projects/{project_id}/export", response_model=ProjectDAWExport)
+async def export_project_to_daw(
+    project_id: str,
+    daw_format: str = Form(...),  # pro_tools, fl_studio
+    user_id: str = Form(...)
+):
+    """Export project to DAW format"""
+    # Verify project exists and user has access
+    project = await db.projects.find_one({"id": project_id})
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Check if user owns project or is a collaborator
+    if project["user_id"] != user_id and user_id not in project.get("collaborators", []):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Create export record
+    export_settings = {
+        "sample_rate": 44100,
+        "bit_depth": 24,
+        "format": daw_format,
+        "include_effects": True,
+        "include_automation": True
+    }
+    
+    export_record = ProjectDAWExport(
+        project_id=project_id,
+        daw_format=daw_format,
+        export_settings=export_settings,
+        status="completed"  # Simulating immediate completion
+    )
+    
+    await db.project_exports.insert_one(export_record.dict())
+    return export_record
+
+# Studio Settings Management
+@api_router.get("/studio/settings/{user_id}", response_model=StudioSettings)
+async def get_studio_settings(user_id: str):
+    """Get user's studio settings"""
+    settings = await db.studio_settings.find_one({"user_id": user_id})
+    if not settings:
+        # Create default settings
+        default_settings = StudioSettings(user_id=user_id)
+        await db.studio_settings.insert_one(default_settings.dict())
+        return default_settings
+    return StudioSettings(**settings)
+
+@api_router.put("/studio/settings/{user_id}")
+async def update_studio_settings(user_id: str, settings_update: StudioSettingsUpdate):
+    """Update user's studio settings"""
+    # Get current settings
+    current_settings = await db.studio_settings.find_one({"user_id": user_id})
+    if not current_settings:
+        # Create default if doesn't exist
+        current_settings = StudioSettings(user_id=user_id).dict()
+        await db.studio_settings.insert_one(current_settings)
+    
+    # Update only provided fields
+    update_data = {k: v for k, v in settings_update.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.studio_settings.update_one(
+        {"user_id": user_id},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Studio settings updated successfully"}
+
+# Audio Interface Controls
+@api_router.put("/studio/audio-interface/{user_id}")
+async def update_audio_interface(user_id: str, interface_settings: AudioInterfaceSettings):
+    """Update audio interface settings"""
+    # Get current studio settings
+    studio_settings = await db.studio_settings.find_one({"user_id": user_id})
+    if not studio_settings:
+        raise HTTPException(status_code=404, detail="Studio settings not found")
+    
+    # Update audio interface settings
+    interface_updates = {f"audio_interface.{k}": v for k, v in interface_settings.dict().items() if v is not None}
+    interface_updates["updated_at"] = datetime.now(timezone.utc)
+    
+    await db.studio_settings.update_one(
+        {"user_id": user_id},
+        {"$set": interface_updates}
+    )
+    
+    return {"message": "Audio interface settings updated successfully"}
+
+# Surround Sound Configuration
+@api_router.post("/studio/surround-sound/{user_id}/configure")
+async def configure_surround_sound(
+    user_id: str,
+    surround_format: str = Form(...),  # stereo, 5.1, 7.1
+    enable_surround: bool = Form(True)
+):
+    """Configure surround sound settings"""
+    # Define speaker positions for different formats
+    speaker_positions = {
+        "stereo": [
+            {"name": "Left", "x": -1, "y": 0, "z": 0},
+            {"name": "Right", "x": 1, "y": 0, "z": 0}
+        ],
+        "5.1": [
+            {"name": "Front Left", "x": -0.7, "y": 1, "z": 0},
+            {"name": "Front Right", "x": 0.7, "y": 1, "z": 0},
+            {"name": "Center", "x": 0, "y": 1, "z": 0},
+            {"name": "Subwoofer", "x": 0, "y": 0.5, "z": -0.5},
+            {"name": "Rear Left", "x": -0.7, "y": -1, "z": 0},
+            {"name": "Rear Right", "x": 0.7, "y": -1, "z": 0}
+        ],
+        "7.1": [
+            {"name": "Front Left", "x": -0.7, "y": 1, "z": 0},
+            {"name": "Front Right", "x": 0.7, "y": 1, "z": 0},
+            {"name": "Center", "x": 0, "y": 1, "z": 0},
+            {"name": "Subwoofer", "x": 0, "y": 0.5, "z": -0.5},
+            {"name": "Side Left", "x": -1, "y": 0, "z": 0},
+            {"name": "Side Right", "x": 1, "y": 0, "z": 0},
+            {"name": "Rear Left", "x": -0.7, "y": -1, "z": 0},
+            {"name": "Rear Right", "x": 0.7, "y": -1, "z": 0}
+        ]
+    }
+    
+    await db.studio_settings.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "surround_enabled": enable_surround,
+                "surround_format": surround_format,
+                "speaker_positions": speaker_positions.get(surround_format, speaker_positions["stereo"]),
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    return {"message": f"Surround sound configured for {surround_format}", "speakers": len(speaker_positions.get(surround_format, []))}
+
+# Initialize DAW Plugins
+@api_router.post("/admin/init-daw-plugins")
+async def initialize_daw_plugins():
+    """Initialize default DAW plugins"""
+    plugins = [
+        # Pro Tools Compatible Plugins
+        DAWPlugin(
+            name="Pro Compressor",
+            category="compressor",
+            daw_compatibility=["pro_tools", "both"],
+            author="Avid",
+            version="1.0",
+            description="Professional dynamics processor for Pro Tools",
+            parameters=[
+                {"name": "threshold", "default": -10, "min": -60, "max": 0},
+                {"name": "ratio", "default": 4, "min": 1, "max": 20},
+                {"name": "attack", "default": 5, "min": 0.1, "max": 100},
+                {"name": "release", "default": 50, "min": 1, "max": 1000}
+            ]
+        ),
+        DAWPlugin(
+            name="Vintage EQ",
+            category="equalizer",
+            daw_compatibility=["pro_tools"],
+            author="Waves",
+            version="2.1",
+            is_premium=True,
+            description="Classic analog-modeled equalizer",
+            parameters=[
+                {"name": "low_freq", "default": 100, "min": 20, "max": 500},
+                {"name": "low_gain", "default": 0, "min": -15, "max": 15},
+                {"name": "mid_freq", "default": 1000, "min": 200, "max": 8000},
+                {"name": "mid_gain", "default": 0, "min": -15, "max": 15},
+                {"name": "high_freq", "default": 10000, "min": 2000, "max": 20000},
+                {"name": "high_gain", "default": 0, "min": -15, "max": 15}
+            ]
+        ),
+        # FL Studio Compatible Plugins
+        DAWPlugin(
+            name="FL Reverb",
+            category="reverb",
+            daw_compatibility=["fl_studio", "both"],
+            author="Image-Line",
+            version="1.5",
+            description="Spacious reverb effect for FL Studio",
+            parameters=[
+                {"name": "room_size", "default": 0.5, "min": 0, "max": 1},
+                {"name": "damping", "default": 0.3, "min": 0, "max": 1},
+                {"name": "wet_level", "default": 0.3, "min": 0, "max": 1},
+                {"name": "dry_level", "default": 0.7, "min": 0, "max": 1}
+            ]
+        ),
+        DAWPlugin(
+            name="Serum Synthesizer",
+            category="synthesizer",
+            daw_compatibility=["fl_studio"],
+            author="Xfer Records",
+            version="1.3",
+            is_premium=True,
+            description="Advanced wavetable synthesizer",
+            parameters=[
+                {"name": "osc1_wave", "default": 0, "min": 0, "max": 127},
+                {"name": "osc1_level", "default": 0.8, "min": 0, "max": 1},
+                {"name": "filter_cutoff", "default": 0.7, "min": 0, "max": 1},
+                {"name": "filter_resonance", "default": 0.2, "min": 0, "max": 1}
+            ]
+        ),
+        # Universal Plugins
+        DAWPlugin(
+            name="Universal Limiter",
+            category="limiter",
+            daw_compatibility=["both"],
+            author="Universal Audio",
+            version="2.0",
+            description="Professional peak limiter for both Pro Tools and FL Studio",
+            parameters=[
+                {"name": "input_gain", "default": 0, "min": -12, "max": 12},
+                {"name": "ceiling", "default": -0.1, "min": -3, "max": 0},
+                {"name": "release", "default": 50, "min": 1, "max": 1000}
+            ]
+        ),
+        DAWPlugin(
+            name="Studio Delay",
+            category="delay",
+            daw_compatibility=["both"],
+            author="T.H.U.G N HOMEBASE ENT.",
+            version="1.0",
+            description="Professional delay effect",
+            parameters=[
+                {"name": "delay_time", "default": 250, "min": 1, "max": 2000},
+                {"name": "feedback", "default": 0.3, "min": 0, "max": 0.95},
+                {"name": "mix", "default": 0.25, "min": 0, "max": 1}
+            ]
+        )
+    ]
+    
+    for plugin in plugins:
+        await db.daw_plugins.insert_one(plugin.dict())
+    
+    return {"message": f"Initialized {len(plugins)} DAW plugins"}
+
 # Include the router in the main app
 app.include_router(api_router)
 
