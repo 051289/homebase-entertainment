@@ -117,6 +117,43 @@ class ContractCreate(BaseModel):
 class ContractSign(BaseModel):
     signature_data: str  # Base64 signature image
 
+# BandLab Membership Models
+class MembershipPlan(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    tier: str  # free, bandlab_basic, bandlab_pro, bandlab_premium
+    price_monthly: float
+    price_yearly: float
+    features: List[str]
+    cloud_storage_gb: int
+    max_collaborators: int
+    premium_sound_packs: bool
+    monthly_download_limit: int
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class CollaborationInvite(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    from_user_id: str
+    to_user_id: str
+    from_username: str
+    to_username: str
+    status: str = "pending"  # pending, accepted, rejected
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    responded_at: Optional[datetime] = None
+
+class UserUpgrade(BaseModel):
+    user_id: str
+    new_tier: str
+
+class CollaborationInviteCreate(BaseModel):
+    project_id: str
+    to_username: str
+    
+class CollaborationResponse(BaseModel):
+    invite_id: str
+    action: str  # accept, reject
+
 # Authentication endpoints
 @api_router.post("/auth/register", response_model=User)
 async def register_user(user_data: UserCreate):
