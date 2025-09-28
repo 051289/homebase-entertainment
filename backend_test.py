@@ -37,6 +37,14 @@ class RecordingStudioAPITester:
                 else:
                     # Form data
                     response = requests.post(url, data=data, headers=headers)
+            elif method == 'PUT':
+                if use_json:
+                    # JSON data
+                    headers['Content-Type'] = 'application/json'
+                    response = requests.put(url, json=data, headers=headers)
+                else:
+                    # Form data
+                    response = requests.put(url, data=data, headers=headers)
 
             success = response.status_code == expected_status
             if success:
