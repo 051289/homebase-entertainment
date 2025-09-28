@@ -69,7 +69,7 @@ const LandingPage = ({ onGetStarted }) => {
             <Button 
               variant="outline" 
               size="lg"
-              className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white px-8 py-4 text-lg font-semibold"
+              className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white px-8 py-4 text-lg font-semibold"
               data-testid="hero-learn-more-btn"
             >
               Learn More
