@@ -272,6 +272,40 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
     }
   };
 
+  const downloadSoundPack = async (pack) => {
+    try {
+      // For now, just simulate a download and track it
+      // In a real app, this would download the actual files
+      
+      if (pack.files.length === 0) {
+        toast.error('This sound pack has no files available');
+        return;
+      }
+
+      // Track the download by making a request to one of the files
+      // This will increment the download counter
+      await axios.get(`${API}/soundpacks/${pack.files[0] || 'dummy.wav'}?user_id=${user.id}`);
+      
+      toast.success(`Downloaded sound pack: ${pack.name}`);
+      
+      // Update user's download count locally
+      if (onUserUpdate) {
+        const updatedUser = { 
+          ...user, 
+          monthly_downloads: (user.monthly_downloads || 0) + 1 
+        };
+        onUserUpdate(updatedUser);
+      }
+      
+    } catch (error) {
+      if (error.response?.status === 429) {
+        toast.error('Monthly download limit reached. Upgrade your membership for more downloads.');
+      } else {
+        toast.error('Failed to download sound pack');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
