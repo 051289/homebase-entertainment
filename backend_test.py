@@ -397,28 +397,53 @@ class RecordingStudioAPITester:
         if not success:
             return False
             
-        # Now create collaboration invite
-        invite_data = {
+        # Now create collaboration invite - this endpoint expects mixed data (JSON + form)
+        # The invite data is JSON, but from_user_id is form data
+        invite_json = {
             "project_id": self.test_project['id'],
-            "to_username": collaborator['username'],
+            "to_username": collaborator['username']
+        }
+        
+        form_data = {
             "from_user_id": self.test_user['id']
         }
         
-        success, response = self.run_test(
-            "Create Collaboration Invite",
-            "POST",
-            "collaboration/invite",
-            200,
-            data=invite_data,
-            use_json=False
-        )
+        # Use a custom request for this mixed format
+        url = f"{self.api_url}/collaboration/invite"
+        self.tests_run += 1
+        print(f"\n🔍 Testing Create Collaboration Invite...")
+        print(f"   URL: {url}")
         
-        if success and 'id' in response:
-            self.test_collaborator = collaborator
-            self.test_invite = response
-            print(f"   Created collaboration invite from {response['from_username']} to {response['to_username']}")
-            return True
-        return False
+        try:
+            # Send JSON in body and form data as form
+            import requests
+            response = requests.post(
+                url,
+                json=invite_json,
+                data=form_data
+            )
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                response_data = response.json()
+                self.test_collaborator = collaborator
+                self.test_invite = response_data
+                print(f"   Created collaboration invite from {response_data['from_username']} to {response_data['to_username']}")
+                return True
+            else:
+                print(f"❌ Failed - Expected 200, got {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"   Error: {error_detail}")
+                except:
+                    print(f"   Error: {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
 
     def test_get_collaboration_invites(self):
         """Test getting collaboration invites"""
