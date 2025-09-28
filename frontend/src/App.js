@@ -924,7 +924,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
 
         {/* Chat Tab */}
         <TabsContent value="chat" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-black border-blue-800">
             <CardHeader>
               <CardTitle className="text-white">AI Music Chat</CardTitle>
               <CardDescription className="text-gray-300">
@@ -986,7 +986,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
 
         {/* Composition Tab */}
         <TabsContent value="composition" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-black border-blue-800">
             <CardHeader>
               <CardTitle className="text-white">🎼 AI Composition Assistant</CardTitle>
               <CardDescription className="text-gray-300">
@@ -1073,7 +1073,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
 
         {/* Mixing Tab */}
         <TabsContent value="mixing" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-black border-blue-800">
             <CardHeader>
               <CardTitle className="text-white">🎚️ AI Mixing Assistant</CardTitle>
               <CardDescription className="text-gray-300">
@@ -1133,7 +1133,7 @@ const AIMusicAssistantSection = ({ user, projects }) => {
 
         {/* Music Theory Tab */}
         <TabsContent value="theory" className="space-y-4">
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-black border-blue-800">
             <CardHeader>
               <CardTitle className="text-white">🎵 Music Theory Assistant</CardTitle>
               <CardDescription className="text-gray-300">
@@ -1639,7 +1639,7 @@ const MembershipSection = ({ user, onUserUpdate }) => {
 
       {/* BandLab Connection */}
       {!user.bandlab_connected && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-black border-blue-800">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
               🎵 Connect Your BandLab Account
@@ -1858,7 +1858,7 @@ const CollaborationSection = ({ user }) => {
       </div>
 
       {!user.collaboration_enabled && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-black border-blue-800">
           <CardHeader>
             <CardTitle className="text-white">🚀 Enable Collaboration</CardTitle>
             <CardDescription className="text-gray-300">
@@ -1876,7 +1876,7 @@ const CollaborationSection = ({ user }) => {
       {user.collaboration_enabled && (
         <>
           {/* Send Invite */}
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className="bg-black border-blue-800">
             <CardHeader>
               <CardTitle className="text-white">Invite Collaborators</CardTitle>
               <CardDescription className="text-gray-300">
@@ -1929,7 +1929,7 @@ const CollaborationSection = ({ user }) => {
 
           {/* Pending Invites */}
           {collaborationInvites.length > 0 && (
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-black border-blue-800">
               <CardHeader>
                 <CardTitle className="text-white">Pending Invitations</CardTitle>
                 <CardDescription className="text-gray-300">
@@ -2057,7 +2057,7 @@ const ContractSection = ({ user, onUserUpdate }) => {
       </div>
 
       {showCreateContract && (
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-black border-blue-800">
           <CardHeader>
             <CardTitle className="text-white">Request Artist Agreement</CardTitle>
             <CardDescription className="text-gray-300">
@@ -2147,7 +2147,7 @@ const ProfileSection = ({ user }) => {
       <h2 className="text-2xl font-bold">Profile</h2>
       
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-black border-blue-800">
           <CardHeader>
             <CardTitle className="text-white">Account Information</CardTitle>
           </CardHeader>
@@ -2173,7 +2173,7 @@ const ProfileSection = ({ user }) => {
           </CardContent>
         </Card>
         
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-black border-blue-800">
           <CardHeader>
             <CardTitle className="text-white">Membership & Status</CardTitle>
           </CardHeader>
