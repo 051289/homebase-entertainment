@@ -246,7 +246,7 @@ const StudioDashboard = ({ user, onUserUpdate }) => {
     try {
       const [projectsRes, soundPacksRes] = await Promise.all([
         axios.get(`${API}/projects?user_id=${user.id}`),
-        axios.get(`${API}/soundpacks`)
+        axios.get(`${API}/soundpacks?user_id=${user.id}`)
       ]);
       setProjects(projectsRes.data);
       setSoundPacks(soundPacksRes.data);
